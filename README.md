@@ -38,7 +38,7 @@
 
 ---
 ## Оформление **Pull Request**
-Подробная архитектура: [docs/PULL_REQUEST_RULES.md](docs/PULL_REQUEST_RULES.md)
+Подробнее: [docs/PULL_REQUEST_RULES.md](docs/PULL_REQUEST_RULES.md)
 
 
 ---
