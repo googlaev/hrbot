@@ -2,7 +2,7 @@
 ## Форк (Fork) репозитория
 1. Открой репозиторий на GitHub, который хочешь изменить.
 https://github.com/googlaev/hrbot
-Репозиторий: [https://github.com/googlaev/hrbot](https://github.com/googlaev/hrbot)
+
 
 ## Коммиты
 
