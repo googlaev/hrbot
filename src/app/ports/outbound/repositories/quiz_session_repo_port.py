@@ -14,6 +14,9 @@ class QuizSessionRepoPort(Protocol):
 
     async def get_active_session(self, user_id: int, quiz_id: int) -> QuizSession | None:
         ...
+
+    async def get_completed_sessions(self, quiz_id: int) -> list[QuizSession]:
+        ...
     
     async def complete_session(self, session_id: int) -> None:
         ...

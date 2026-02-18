@@ -23,4 +23,5 @@ class AppActions:
         self.submit_answer = SubmitAnswerUC(quiz_session_repo=quiz_session_repo)
         self.quiz_list = QuizListUC(quiz_repo=quiz_repo)
         self.set_user_name = SetUserNameUC(users_repo=users_repo)
+        self.get_completed_quizzes = GetCompletedQuizzesUC(quiz_session_repo=quiz_session_repo)
 
