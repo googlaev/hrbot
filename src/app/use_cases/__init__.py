@@ -6,6 +6,10 @@ from .quiz_session.start_quiz import StartQuizUC
 from .quiz_session.submit_answer import SubmitAnswerUC
 from .quiz.quiz_list import QuizListUC
 from .user.set_user_name import SetUserNameUC
+from .quiz_session.get_completed_quizzes import GetCompletedQuizzesUC
+from .quiz.delete_quiz import DeleteQuizUC
+from .export_attempts import ExcelExportAttemptsUC
+
 
 __all__ = [
     "AddQuizFromExcelUC",
@@ -15,5 +19,8 @@ __all__ = [
     "StartQuizUC",
     "SubmitAnswerUC",
     "QuizListUC",
-    "SetUserNameUC"
+    "SetUserNameUC",
+    "GetCompletedQuizzesUC",
+    "DeleteQuizUC",
+    "ExcelExportAttemptsUC"
 ]

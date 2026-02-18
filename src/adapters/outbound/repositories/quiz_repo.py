@@ -59,3 +59,10 @@ class QuizRepo(QuizRepoPort):
             )
 
         return quiz_id.lastrowid
+
+    async def delete_quiz(self, quiz_id: int) -> None:
+        await self.db.execute(
+            "DELETE FROM quizzes WHERE id=?",
+            (quiz_id,),
+            commit=True
+        )

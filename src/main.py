@@ -12,6 +12,7 @@ from adapters.outbound.repositories.users_repo import UsersRepo
 from adapters.outbound.repositories.telegram_auth_repo import TelegramAuthRepo
 from adapters.outbound.repositories.quiz_session_repo import QuizSessionRepo
 from adapters.outbound.parsers.excel_parser import ExcelParser
+from adapters.outbound.exporters.excel_exporter import ExcelExporter
 
 from adapters.inbound.telegram_ui.app import TelegramUI
 
@@ -60,13 +61,16 @@ async def main():
 
     excel_parser = ExcelParser()
 
+    excel_exporter = ExcelExporter()
+
     # ------------ Use-cases -----------
     actions = AppActions(
         users_repo=users_repo,
         tg_auth_repo=tg_auth_repo,
         quiz_repo=quiz_repo,
         quiz_session_repo=quiz_session_repo,
-        excel_parser=excel_parser
+        excel_parser=excel_parser,
+        excel_exporter=excel_exporter
     )
 
     # -------- Indound adapters --------

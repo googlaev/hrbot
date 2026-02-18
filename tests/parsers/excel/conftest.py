@@ -1,11 +1,11 @@
 import pytest
 import pandas as pd
 from io import BytesIO
-from typing import Dict, Any, List
+from typing import Any
 
 @pytest.fixture
 def make_excel_bytes():
-    def _factory(name: str, questions: List[Dict[str, Any]]) -> bytes:
+    def _factory(name: str, questions: list[dict[str, Any]]) -> bytes:
         """
         questions example:
         [
@@ -22,7 +22,7 @@ def make_excel_bytes():
         name_row = pd.DataFrame([[name, None, None]])
 
         # Rows 2... = questions
-        rows: List[Any] = []
+        rows: list[Any] = []
         for q in questions:
             rows.append(
                 [q["number"], q["question"], q["right"], *q["wrong"]]

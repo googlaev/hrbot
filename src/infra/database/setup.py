@@ -5,6 +5,8 @@ if TYPE_CHECKING:
     from .sqlite_db import SqliteDatabase
 
 async def setup_database(db: SqliteDatabase) -> None:
+    await db.execute("PRAGMA foreign_keys = ON;")
+
     await db.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -77,7 +79,7 @@ async def setup_database(db: SqliteDatabase) -> None:
             selected_answer TEXT NOT NULL,
             is_correct INTEGER NOT NULL,
             timestamp DATETIME NOT NULL,
-            FOREIGN KEY(session_id) REFERENCES quiz_session(id) ON DELETE CASCADE
+            FOREIGN KEY(session_id) REFERENCES quiz_sessions(id) ON DELETE CASCADE
         );
         """
     )

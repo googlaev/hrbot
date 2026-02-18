@@ -11,3 +11,6 @@ class QuizRepoPort(Protocol):
 
     async def add_quiz(self, quiz: Quiz, questions: list[Question]) -> int | None:
         ...
+
+    async def delete_quiz(self, quiz_id: int) -> None:
+        ...

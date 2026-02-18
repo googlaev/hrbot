@@ -19,7 +19,6 @@ class QuizStates(StatesGroup):
 @user_router.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Команда /quiz чтобы увидеть доступные тесты.")
-    await message.delete()
 
 # ================== /quiz ==================
 @user_router.message(Command("quiz"))
@@ -36,7 +35,6 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
         ]
     )
     await message.answer("Выберите тест:", reply_markup=keyboard)
-    await message.delete()
 
 # ================== Quiz selection ==================
 @user_router.callback_query(F.data.startswith("quiz|"))
@@ -117,7 +115,7 @@ async def handle_answer(callback: types.CallbackQuery, state: FSMContext, action
 
     if finish.is_finished:
         await message.edit_text(
-            f"id теста: `{session_id}`\n\n🎉 Тест завершен!\nПравильность ответов: *{int((finish.correct / finish.total) * 100)}%*",
+            f"ID результата: `{session_id}`\n\n🎉 Тест завершен!\nПравильность ответов: *{int((finish.correct / finish.total) * 100)}%*",
             parse_mode="Markdown"
         )
         await state.clear()

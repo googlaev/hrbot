@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from domain.entities.quiz_session import QuizSession, QuizAnswer
 from domain.entities.quiz import Question
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
@@ -77,6 +78,32 @@ class QuizSessionRepo(QuizSessionRepoPort):
             current_question=row["current_question"],
             completed=bool(row["completed"])
         )
+
+        # Sessions
+    
+    async def get_completed_sessions(self, quiz_id: int) -> list[QuizSession]:
+        rows = await self.db.fetchall(
+            """
+            SELECT *
+            FROM quiz_sessions
+            WHERE quiz_id = ? AND completed = 1
+            ORDER BY finished_at DESC
+            """,
+            (quiz_id,)
+        )
+
+        return [
+            QuizSession(
+                id=row["id"],
+                user_id=row["user_id"],
+                quiz_id=row["quiz_id"],
+                started_at=datetime.fromisoformat(row["started_at"]),
+                finished_at=datetime.fromisoformat(row["finished_at"]),
+                current_question=row["current_question"],
+                completed=True
+            )
+            for row in rows
+        ]
 
     async def complete_session(self, session_id: int) -> None:
         await self.db.execute(
