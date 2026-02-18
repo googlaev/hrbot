@@ -20,7 +20,6 @@ from app.app_actions import AppActions
 from dotenv import load_dotenv
 load_dotenv()
 
-
 async def wait_shutdown():
     stop_event = asyncio.Event()
     
@@ -31,7 +30,6 @@ async def wait_shutdown():
     signal.signal(signal.SIGTERM, lambda s, f: signal_handler())
 
     await stop_event.wait()
-
 
 async def main():
     # -------- Infra --------
