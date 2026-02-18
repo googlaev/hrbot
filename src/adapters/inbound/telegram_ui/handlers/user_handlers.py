@@ -27,6 +27,7 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
     quizzes = await actions.quiz_list.execute()
     if not quizzes:
         await message.answer("На данный момент нет доступных тестов.")
+        await message.delete()
         return
 
     keyboard = InlineKeyboardMarkup(
@@ -117,7 +118,7 @@ async def handle_answer(callback: types.CallbackQuery, state: FSMContext, action
 
     if finish.is_finished:
         await message.edit_text(
-            f"id теста: `{session_id}`\n\n🎉 Тест завершен!\nПравильность ответов: *{int((finish.correct / finish.total) * 100)}%*",
+            f"ID результата: `{session_id}`\n\n🎉 Тест завершен!\nПравильность ответов: *{int((finish.correct / finish.total) * 100)}%*",
             parse_mode="Markdown"
         )
         await state.clear()
