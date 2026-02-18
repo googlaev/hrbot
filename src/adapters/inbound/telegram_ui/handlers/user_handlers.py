@@ -19,7 +19,6 @@ class QuizStates(StatesGroup):
 @user_router.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Команда /quiz чтобы увидеть доступные тесты.")
-    await message.delete()
 
 # ================== /quiz ==================
 @user_router.message(Command("quiz"))
@@ -27,7 +26,6 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
     quizzes = await actions.quiz_list.execute()
     if not quizzes:
         await message.answer("На данный момент нет доступных тестов.")
-        await message.delete()
         return
 
     keyboard = InlineKeyboardMarkup(
@@ -37,7 +35,6 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
         ]
     )
     await message.answer("Выберите тест:", reply_markup=keyboard)
-    await message.delete()
 
 # ================== Quiz selection ==================
 @user_router.callback_query(F.data.startswith("quiz|"))

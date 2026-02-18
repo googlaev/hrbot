@@ -4,6 +4,8 @@ from aiogram.utils.keyboard import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram import Router
+from aiogram.types import FSInputFile, BufferedInputFile
+
 from app.app_actions import AppActions
 
 admin_router = Router()
@@ -15,23 +17,25 @@ async def cmd_start(message: types.Message):
     await message.answer("Привет, администратор! /list_quiz для меню тестов.")
 
 @admin_router.message(Command("list_quiz"))
-async def list_quizzes(message: types.Message, state: FSMContext, actions: AppActions):
+async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FSMContext, actions: AppActions):
     quizzes = await actions.quiz_list.execute()
-
-    if not quizzes:
-        await message.answer("Тестов пока нет.")
-        await message.delete()
-        return
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text=f"id: {q.id} - {q.title}", callback_data=f"quiz|{q.id}")] for q in quizzes
         ]
     )
+
     await state.clear()
     await state.update_data(menu_stack=["list_quiz"])
-    await message.answer("Список тестов:", reply_markup=keyboard)
-    await message.delete()
+
+    if isinstance(tg_object, types.Message):
+        if not quizzes:
+            await tg_object.answer("Тестов пока нет.")
+            return
+        await tg_object.answer("Список тестов:", reply_markup=keyboard)
+    else:
+        await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
 
 @admin_router.callback_query(F.data.startswith("quiz|"))
 async def quiz_menu(callback: types.CallbackQuery, state: FSMContext):
@@ -85,7 +89,6 @@ async def view_attempts(callback: types.CallbackQuery, state: FSMContext, action
 
     if not quizzes:
         text += "Нет завершенных попыток для этого теста."
-        return
 
     for q in quizzes:
         percent = q.percent
@@ -125,39 +128,32 @@ async def delete_quiz(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.edit_text(f"Вы уверены, что хотите удалить тест {quiz_id}?", reply_markup=keyboard)
 
 @admin_router.callback_query(F.data.startswith("delete_confirm"))
-async def delete_confirm(callback: types.CallbackQuery, state: FSMContext):
+async def delete_confirm(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
     data = await state.get_data()
     quiz_id = data["selected_quiz_id"]
 
-    await delete_quiz_by_id(quiz_id)
-    await callback.message.edit_text(f"Тест {quiz_id} удален.")
+    await actions.delete_quiz.execute(quiz_id)
+
+    await list_quizzes(callback.message, state, actions)
+    await callback.message.delete()
 
 @admin_router.callback_query(F.data.startswith("export_attempts"))
-async def export_attempts(callback: types.CallbackQuery, state: FSMContext):
+async def export_attempts(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
     data = await state.get_data()
     quiz_id = data["selected_quiz_id"]
 
-    sessions = await get_completed_sessions(quiz_id)
-    if not sessions:
-        await callback.message.answer("Нет завершенных попыток для этого теста.")
+    file_bytes = await actions.excel_export_attempts.execute(quiz_id)
+    if file_bytes is None:
+        await callback.answer("Нет прохождений теста для экспорта", show_alert=True)
         return
 
-    output = io.BytesIO()
-    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-    worksheet = workbook.add_worksheet("Quiz Results")
-    worksheet.write_row(0, 0, ["User ID", "Session ID", "Correct", "Total", "Percent", "Started at", "Finished at"])
+    tg_file = BufferedInputFile(
+        file_bytes,
+        filename=f"quiz_{quiz_id}_results.xlsx"
+    )
 
-    row_num = 1
-    for s in sessions:
-        score = await get_score(s.id)
-        percent = (score[0] / score[1] * 100) if score[1] > 0 else 0
-        worksheet.write_row(row_num, 0, [s.user_id, s.id, score[0], score[1], f"{percent:.1f}%", str(s.started_at), str(s.finished_at)])
-        row_num += 1
-
-    workbook.close()
-    output.seek(0)
-
-    await callback.message.answer_document(InputFile(output, filename=f"quiz_{quiz_id}_results.xlsx"))
+    await callback.message.answer_document(tg_file)
+    await callback.answer()
 
 @admin_router.callback_query(F.data.startswith("back"))
 async def back_callback(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
@@ -173,7 +169,7 @@ async def back_callback(callback: types.CallbackQuery, state: FSMContext, action
 
     # Render previous menu based on type
     if previous_menu == "list_quiz":
-        await list_quizzes(callback.message, state, actions)
+        await list_quizzes(callback, state, actions)
     elif previous_menu == "quiz_menu":
         await quiz_menu(callback, state)
 
@@ -197,6 +193,10 @@ async def handle_document(message: Message, bot: Bot, actions: AppActions, user_
     
     quiz = await actions.add_quiz_from_excel.execute(file_data.getvalue(), user_id)
 
+    if quiz is None:
+        await mess.edit_text("Что то пошло не так...")
+        return
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="ОК", callback_data="close")]]
     )
@@ -211,7 +211,3 @@ async def handle_document(message: Message, bot: Bot, actions: AppActions, user_
 async def close_callback(callback: types.CallbackQuery):
     await callback.message.delete()
 
-@admin_router.callback_query(F.data == "ignore")
-async def ignore_callback(callback: types.CallbackQuery):
-    """Игнорирует callback'и для неактивных кнопок"""
-    await callback.answer()

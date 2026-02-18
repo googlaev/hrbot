@@ -5,7 +5,7 @@ from app.ports.outbound.excel_parser_port import ExcelParserPort
 
 
 class ExcelParser(ExcelParserPort):
-    def parse_quiz(self, excel_bytes: bytes) -> ParsedQuiz:
+    def parse_quiz(self, excel_bytes: bytes) -> ParsedQuiz | None:
         buffer = BytesIO(excel_bytes)
         df = pd.read_excel(buffer, header=None, dtype=str) # type: ignore
 
@@ -37,5 +37,8 @@ class ExcelParser(ExcelParserPort):
                     wrong_answers=wrong,
                 )
             )
+        
+        if not questions:
+            return 
 
         return ParsedQuiz(name=name, questions=questions)

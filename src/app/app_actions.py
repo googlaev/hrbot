@@ -4,6 +4,7 @@ from app.ports.outbound.repositories.quiz_repo_port import QuizRepoPort
 from app.ports.outbound.excel_parser_port import ExcelParserPort
 from app.ports.outbound.repositories.telegram_auth_repo_port import TelegramAuthRepoPort
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
+from app.ports.outbound.excel_exporter_port import ExcelExporterPort
 
 
 class AppActions:
@@ -14,6 +15,7 @@ class AppActions:
         quiz_repo: QuizRepoPort,
         excel_parser: ExcelParserPort,
         quiz_session_repo: QuizSessionRepoPort,
+        excel_exporter: ExcelExporterPort
     ):
         self.add_quiz_from_excel = AddQuizFromExcelUC(parser=excel_parser, quiz_repo=quiz_repo)
         self.auth_by_telegram = AuthenticateByTelegramUC(users_repo=users_repo, tg_auth_repo=tg_auth_repo)
@@ -24,4 +26,6 @@ class AppActions:
         self.quiz_list = QuizListUC(quiz_repo=quiz_repo)
         self.set_user_name = SetUserNameUC(users_repo=users_repo)
         self.get_completed_quizzes = GetCompletedQuizzesUC(quiz_session_repo=quiz_session_repo)
+        self.delete_quiz = DeleteQuizUC(quiz_repo=quiz_repo)
+        self.excel_export_attempts = ExcelExportAttemptsUC(quiz_session_repo=quiz_session_repo, excel_exporter=excel_exporter)
 

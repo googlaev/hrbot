@@ -1,13 +1,17 @@
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
 from app.dtos.quiz_session_result import QuizSessionResultDto
+from app.ports.outbound.excel_exporter_port import ExcelExporterPort
 
 
-class GetCompletedQuizzesUC:
-    def __init__(self, quiz_session_repo: QuizSessionRepoPort):
+class ExcelExportAttemptsUC:
+    def __init__(self, quiz_session_repo: QuizSessionRepoPort, excel_exporter: ExcelExporterPort):
         self.quiz_session_repo = quiz_session_repo
+        self.excel_exporter = excel_exporter
 
-    async def execute(self, quiz_id: int) -> list[QuizSessionResultDto]:
+    async def execute(self, quiz_id: int) -> bytes | None:
         sessions = await self.quiz_session_repo.get_completed_sessions(quiz_id)
+        if not sessions:
+            return
 
         results: list[QuizSessionResultDto] = []
 
@@ -25,4 +29,4 @@ class GetCompletedQuizzesUC:
             )
             results.append(dto)
 
-        return results
+        return self.excel_exporter.export_quiz_results(results)

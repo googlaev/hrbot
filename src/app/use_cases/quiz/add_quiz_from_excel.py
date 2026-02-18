@@ -8,8 +8,11 @@ class AddQuizFromExcelUC:
         self.parser = parser
         self.quiz_repo = quiz_repo
 
-    async def execute(self, excel_bytes: bytes, user_id: int):
+    async def execute(self, excel_bytes: bytes, user_id: int) -> Quiz | None:
         parsed_quiz = self.parser.parse_quiz(excel_bytes)
+
+        if parsed_quiz is None:
+            return
 
         questions = [
             Question(
