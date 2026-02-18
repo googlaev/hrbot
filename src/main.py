@@ -1,6 +1,4 @@
 
-<<<<<<< Updated upstream
-=======
 from infra.tz_clock import TZClock
 from infra.logging import setup_logger, get_logger
 from infra.database.sqlite_db import SqliteDatabase
@@ -87,4 +85,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
->>>>>>> Stashed changes
