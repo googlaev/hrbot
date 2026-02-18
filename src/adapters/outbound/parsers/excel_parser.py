@@ -17,7 +17,7 @@ class ExcelParser(ExcelParserPort):
         # Remaining rows: questions
         questions: list[ParsedQuestion] = []
 
-        for idx in range(1, len(df)):
+        for idx in range(2, len(df)):
             row = df.iloc[idx]
 
             number = row[0]

@@ -1,9 +1,8 @@
 import os
 import asyncio
 import signal
-
 from infra.tz_clock import TZClock
-from infra.logger import InfraLogger
+from infra.logging import setup_logger, get_logger
 from infra.database.sqlite_db import SqliteDatabase
 from infra.database.setup import setup_database
 from infra.telegram.bot import TelegramBotInfra
@@ -11,6 +10,7 @@ from infra.telegram.bot import TelegramBotInfra
 from adapters.outbound.repositories.quiz_repo import QuizRepo
 from adapters.outbound.repositories.users_repo import UsersRepo
 from adapters.outbound.repositories.telegram_auth_repo import TelegramAuthRepo
+from adapters.outbound.repositories.quiz_session_repo import QuizSessionRepo
 from adapters.outbound.parsers.excel_parser import ExcelParser
 
 from adapters.inbound.telegram_ui.app import TelegramUI
@@ -35,7 +35,10 @@ async def main():
     # -------- Infra --------
     tz_clock = TZClock(os.getenv("TIMEZONE", "UTC"))
 
-    logger = InfraLogger(tz_clock=tz_clock, name="app", log_dir="logs")
+    setup_logger(name="HRBOT", log_dir="logs", clock=tz_clock, debug_enabled=False)
+
+    logger = get_logger()
+
     logger.info("🚀 Program start...")
 
     db = SqliteDatabase("data/app.db")
@@ -52,6 +55,7 @@ async def main():
     # -------- Outbound adapters --------
     quiz_repo = QuizRepo(db)
     users_repo = UsersRepo(db)
+    quiz_session_repo = QuizSessionRepo(db, tz_clock=tz_clock)
     tg_auth_repo = TelegramAuthRepo(db)
 
     excel_parser = ExcelParser()
@@ -61,12 +65,12 @@ async def main():
         users_repo=users_repo,
         tg_auth_repo=tg_auth_repo,
         quiz_repo=quiz_repo,
-        excel_parser=excel_parser,
-        logger=logger
+        quiz_session_repo=quiz_session_repo,
+        excel_parser=excel_parser
     )
 
     # -------- Indound adapters --------
-    TelegramUI(tg_bot, actions, logger)
+    TelegramUI(tg_bot, actions)
     
     logger.info("✅ Program started")
 

@@ -4,7 +4,7 @@ from app.dtos.tg_auth_dto import TelegramAuthDTO
 from domain.entities.user import User
 
 
-class AuthenticateByTelegram:
+class AuthenticateByTelegramUC:
     def __init__(self, users_repo: UsersRepoPort, tg_auth_repo: TelegramAuthRepoPort):
         self.users_repo = users_repo
         self.tg_auth_repo = tg_auth_repo

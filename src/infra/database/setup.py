@@ -9,11 +9,13 @@ async def setup_database(db: SqliteDatabase) -> None:
         """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            role TEXT NOT NULL
+            role TEXT NOT NULL,
+            name TEXT
         );
         """
     )
 
+    # ==========================
     await db.execute(
         """
         CREATE TABLE IF NOT EXISTS telegram_auth (
@@ -27,27 +29,60 @@ async def setup_database(db: SqliteDatabase) -> None:
         """
     )
 
+    # ==========================
     await db.execute(
         """
-        CREATE TABLE IF NOT EXISTS quiz (
+        CREATE TABLE IF NOT EXISTS quizzes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            title TEXT NOT NULL
         );
         """
     )
 
     await db.execute(
         """
-        CREATE TABLE IF NOT EXISTS question (
+        CREATE TABLE IF NOT EXISTS questions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             quiz_id INTEGER NOT NULL,
             number INTEGER NOT NULL,
-            text TEXT NOT NULL,
+            question_text TEXT NOT NULL,
             right_answer TEXT NOT NULL,
             wrong_answers_json TEXT NOT NULL,
-            FOREIGN KEY (quiz_id) REFERENCES quiz(id) ON DELETE CASCADE
+            FOREIGN KEY(quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
         );
         """
     )
+
+    # ==========================
+    await db.execute(
+        """ 
+        CREATE TABLE IF NOT EXISTS quiz_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            quiz_id INTEGER NOT NULL,
+            started_at DATETIME NOT NULL,
+            finished_at DATETIME,
+            current_question INTEGER NOT NULL DEFAULT 0,
+            completed INTEGER NOT NULL DEFAULT 0
+        );
+        """
+    )
+
+    await db.execute(
+        """ 
+        CREATE TABLE IF NOT EXISTS quiz_answers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            question_id INTEGER NOT NULL,
+            selected_answer TEXT NOT NULL,
+            is_correct INTEGER NOT NULL,
+            timestamp DATETIME NOT NULL,
+            FOREIGN KEY(session_id) REFERENCES quiz_session(id) ON DELETE CASCADE
+        );
+        """
+    )
+
+    # ==========================
+
 
     

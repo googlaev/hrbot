@@ -1,4 +1,3 @@
-from typing import Optional
 from app.ports.outbound.repositories.telegram_auth_repo_port import TelegramAuthRepoPort
 from infra.database.sqlite_db import SqliteDatabase
 from app.dtos.tg_auth_dto import TelegramAuthDTO
@@ -8,7 +7,7 @@ class TelegramAuthRepo(TelegramAuthRepoPort):
     def __init__(self, db: SqliteDatabase):
         self.db = db
 
-    async def find_user_by_telegram_id(self, telegram_id: int) -> Optional[int]:
+    async def find_user_by_telegram_id(self, telegram_id: int) -> int | None:
         row = await self.db.fetchone(
             "SELECT user_id FROM telegram_auth WHERE telegram_id = ?",
             (telegram_id,)

@@ -2,7 +2,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.strategy import FSMStrategy
-from typing import Optional, Any
+from typing import Any
 
 
 class TelegramBotInfra:
@@ -14,7 +14,7 @@ class TelegramBotInfra:
     ):
         self._bot = Bot(token=tg_bot_token)
         self._dp = Dispatcher(storage=storage, fsm_strategy=fsm_strategy)
-        self._polling_task: Optional[asyncio.Task[Any]] = None
+        self._polling_task: asyncio.Task[Any] | None = None
 
     async def start_polling(self):
         if self._polling_task and not self._polling_task.done():

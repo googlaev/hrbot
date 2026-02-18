@@ -1,4 +1,3 @@
-from typing import Optional
 from domain.entities.user import User
 from app.ports.outbound.repositories.users_repo_port import UsersRepoPort
 from infra.database.sqlite_db import SqliteDatabase
@@ -8,10 +7,10 @@ class UsersRepo(UsersRepoPort):
     def __init__(self, db: SqliteDatabase):
         self.db = db
 
-    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int) -> User | None:
         row = await self.db.fetchone(
             """
-            SELECT id, role FROM users WHERE id = ?
+            SELECT id, role, name FROM users WHERE id = ?
             """,
             (user_id,)
         )
@@ -21,7 +20,8 @@ class UsersRepo(UsersRepoPort):
 
         return User(
             id=row["id"],
-            role=row["role"]
+            role=row["role"],
+            name=row["name"]
         )
 
     async def add_user(self, user: User) -> int:
@@ -40,4 +40,11 @@ class UsersRepo(UsersRepoPort):
             raise Exception("Failed to insert user into database")
 
         return last_row_id
+    
+    async def update_name(self, user_id: int, new_name: str):
+        await self.db.execute(
+            "UPDATE users SET name = ? WHERE id = ?",
+            (new_name, user_id),
+            commit=True
+        )
 

@@ -92,7 +92,7 @@ async def handle_document(message: Message, bot: Bot, actions: AppActions, user_
         inline_keyboard=[[InlineKeyboardButton(text="ОК", callback_data="close")]]
     )
 
-    message = f"Name test: {quiz.name}\n id test: {quiz.id}\n 1 question: {quiz.questions[0].right_answer}\n"
+    message = f"Name test: {quiz.title}\n id test: {quiz.id}"
 
     await mess.edit_text(message, reply_markup=keyboard)
 

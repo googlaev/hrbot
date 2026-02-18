@@ -7,16 +7,14 @@ from .filters.user_filter import UserFilter
 from .handlers import user_router, admin_router
 
 from app.app_actions import AppActions
-from app.ports.outbound.logger_port import LoggerPort
 from infra.telegram.bot import TelegramBotInfra
 
 
 class TelegramUI:
-    def __init__(self, bot_infra: TelegramBotInfra, actions: AppActions, logger: LoggerPort):
+    def __init__(self, bot_infra: TelegramBotInfra, actions: AppActions):
         self.bot_infra = bot_infra 
-        self.logger = logger
 
-        self.middleware = UserAuthMiddleware(actions, logger)
+        self.middleware = UserAuthMiddleware(actions)
 
         self.bot = bot_infra.bot
         self.dp = bot_infra.dp

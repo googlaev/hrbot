@@ -1,5 +1,6 @@
 import aiosqlite
-from typing import Optional, Iterable, Any
+from typing import Any
+from collections.abc import Iterable
 from pathlib import Path
 
 
@@ -7,7 +8,7 @@ class SqliteDatabase:
     def __init__(self, db_path: str):
         self._db_path = Path(db_path)
         self._db_path.parent.mkdir(parents=True, exist_ok=True) 
-        self._conn: Optional[aiosqlite.Connection] = None
+        self._conn: aiosqlite.Connection | None = None
 
     async def connect(self) -> None:
         self._conn = await aiosqlite.connect(self._db_path)
@@ -78,7 +79,7 @@ class SqliteDatabase:
         self,
         query: str,
         params: Iterable[Any] | None = None,
-    ) -> Optional[aiosqlite.Row]:
+    ) -> aiosqlite.Row | None:
         """
         Возвращает первую строку результата запроса или None
         
