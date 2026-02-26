@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
 from domain.entities.quiz_session import QuizAnswer
 
@@ -8,6 +9,8 @@ class SubmitAnswerResult:
     is_finished: bool
     correct: int = 0
     total: int = 0
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
 
 class SubmitAnswerUC:
@@ -45,10 +48,14 @@ class SubmitAnswerUC:
         if not has_next:
             await self.quiz_session_repo.complete_session(session_id)
             correct, total = await self.quiz_session_repo.get_score(session_id)
+            session = await self.quiz_session_repo.get_session(session_id)
+
             return SubmitAnswerResult(
                 is_finished=True,
                 correct=correct,
-                total=total
+                total=total,
+                started_at=session.started_at,
+                finished_at=session.finished_at
             )
 
         return SubmitAnswerResult(

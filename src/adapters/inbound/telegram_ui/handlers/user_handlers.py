@@ -15,12 +15,22 @@ class QuizStates(StatesGroup):
     finished = State()
 
 
-# ================== /start ==================
+# ============================ Хендлеры команд ============================
 @user_router.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer("Привет! Команда /quiz чтобы увидеть доступные тесты.")
 
-# ================== /quiz ==================
+@user_router.message(Command("help"))
+async def help_quiz(message: types.Message):
+    help_text = (
+        "📌 *Инструкция пользователя:*\n\n"
+        "/quiz - Посмотреть доступные тесты\n"
+        "Выберите тест и отвечайте на вопросы, нажимая кнопки с вариантами.\n"
+        "Если вы хотите завершить тест досрочно, нажмите кнопку 'Завершить'.\n\n"
+        "После окончания теста вы увидите количество правильных ответов и время прохождения."
+    )
+    await message.answer(help_text, parse_mode="Markdown")
+
 @user_router.message(Command("quiz"))
 async def cmd_quiz(message: types.Message, actions: AppActions):
     quizzes = await actions.quiz_list.execute()
@@ -30,7 +40,7 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=q.title, callback_data=f"quiz|{q.id}")]
+            [InlineKeyboardButton(text=f"{q.id} - {q.title}", callback_data=f"quiz|{q.id}")]
             for q in quizzes
         ]
     )
@@ -50,11 +60,15 @@ async def quiz_select(callback: types.CallbackQuery, user_id: int, state: FSMCon
     quiz_id = int(callback_data.split("|")[1])
 
     result = await actions.start_quiz.execute(user_id, quiz_id)
-    if result.get("requires_name", False):
+    if result.get("requires_name"):
         await message.edit_text("Укажите как к вам обращаться:")
         await state.set_state(QuizStates.waiting_for_name)
         await state.update_data(quiz_id=quiz_id)
         await state.update_data(quiz_message=message)
+        return
+    
+    if result.get("limit_reached"):
+        await callback.answer("Вы уже проходили этот тест сегодня!", show_alert=True)
         return
     
     quiz_session = result["quiz_session"]
@@ -114,10 +128,16 @@ async def handle_answer(callback: types.CallbackQuery, state: FSMContext, action
     finish = await actions.submit_answer.execute(session_id, answer_index)
 
     if finish.is_finished:
+        duration = finish.finished_at - finish.started_at
+        minutes, seconds = divmod(duration.seconds, 60)
+
         await message.edit_text(
-            f"ID результата: `{session_id}`\n\n🎉 Тест завершен!\nПравильность ответов: *{int((finish.correct / finish.total) * 100)}%*",
+            f"🎉 Тест завершен!\n"
+            f"Результат: *{finish.correct}/{finish.total}*\n"
+            f"Время прохождения: *{minutes:02d}:{seconds:02d}*",
             parse_mode="Markdown"
         )
+
         await state.clear()
         return
 
@@ -149,7 +169,8 @@ async def send_question(
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=str(i+1), callback_data=f"answer|{i}") for i in range(len(question.options))]
+            [InlineKeyboardButton(text=str(i+1), callback_data=f"answer|{i}") for i in range(len(question.options))],
+            [InlineKeyboardButton(text="Завершить", callback_data="finish_now")]
         ]
     )
 
@@ -158,3 +179,22 @@ async def send_question(
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
+
+@user_router.callback_query(F.data == "finish_now", QuizStates.in_quiz)
+async def finish_now(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    data = await state.get_data()
+    session_id = data["session_id"]
+
+    # call UC
+    result = await actions.finish_quiz.execute(session_id)
+
+    duration = result.finished_at - result.started_at
+    minutes, seconds = divmod(duration.seconds, 60)
+
+    await callback.message.edit_text(
+        f"Тест завершён досрочно\n"
+        f"Результат: {result.correct}/{result.total}\n"
+        f"Время: {minutes:02d}:{seconds:02d}"
+    )
+
+    await state.clear()

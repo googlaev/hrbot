@@ -15,13 +15,13 @@ class QuizSessionRepo(QuizSessionRepoPort):
         self.logger = get_logger(__class__.__name__)
 
     # Sessions
-    async def create_session(self, user_id: int, quiz_id: int) -> QuizSession | None:
+    async def create_session(self, user_id: int, quiz_id: int, question_order: list[int]) -> QuizSession | None:
         cursor = await self.db.execute(
             """
-            INSERT INTO quiz_sessions (user_id, quiz_id, started_at)
-            VALUES (?, ?, ?)
+            INSERT INTO quiz_sessions (user_id, quiz_id, started_at, question_order)
+            VALUES (?, ?, ?, ?)
             """,
-            (user_id, quiz_id, self.tz_clock.now()),
+            (user_id, quiz_id, self.tz_clock.now(), json.dumps(question_order)),
             commit=True
         )
 
@@ -47,10 +47,12 @@ class QuizSessionRepo(QuizSessionRepoPort):
             user_id=row["user_id"],
             quiz_id=row["quiz_id"],
 
-            started_at=row["started_at"],
-            finished_at=row["finished_at"],
+            finished_at = datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
+            started_at = datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
 
-            current_question=row["current_question"],
+            question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+            current_index=row["current_index"],
+
             completed=bool(row["completed"])
         )
     
@@ -75,7 +77,8 @@ class QuizSessionRepo(QuizSessionRepoPort):
             quiz_id=row["quiz_id"],
             started_at=row["started_at"],
             finished_at=row["finished_at"],
-            current_question=row["current_question"],
+            question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+            current_index=row["current_index"],
             completed=bool(row["completed"])
         )
 
@@ -99,7 +102,8 @@ class QuizSessionRepo(QuizSessionRepoPort):
                 quiz_id=row["quiz_id"],
                 started_at=datetime.fromisoformat(row["started_at"]),
                 finished_at=datetime.fromisoformat(row["finished_at"]),
-                current_question=row["current_question"],
+                question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+                current_index=row["current_index"],
                 completed=True
             )
             for row in rows
@@ -112,21 +116,44 @@ class QuizSessionRepo(QuizSessionRepoPort):
             commit=True
         )
 
-    # Questions
-    async def get_current_question(self, session_id: int) -> Question | None:
+    async def count_sessions_today(self, user_id: int, quiz_id: int) -> int:
         row = await self.db.fetchone(
             """
-            SELECT q.*
-            FROM quiz_sessions ts
-            JOIN questions q ON q.quiz_id = ts.quiz_id AND q.number = ts.current_question + 1
-            WHERE ts.id = ?
+            SELECT COUNT(*) AS cnt
+            FROM quiz_sessions
+            WHERE user_id = ?
+              AND quiz_id = ?
             """,
-            (session_id,)
+            (user_id, quiz_id, )
         )
 
+        if row is None:
+            raise
+
+        return row["cnt"] or 0
+
+    # Questions
+    async def get_current_question(self, session_id: int) -> Question | None:
+        session = await self.get_session(session_id)
+        if not session:
+            return None
+
+        if session.current_index >= len(session.question_order):
+            return None  # session finished
+
+        question_id = session.question_order[session.current_index]
+
+        row = await self.db.fetchone(
+            """
+            SELECT id, quiz_id, number, question_text, right_answer, wrong_answers_json
+            FROM questions
+            WHERE id = ?
+            """,
+            (question_id,)
+        )
         if not row:
             return None
-        
+
         return Question(
             id=row["id"],
             quiz_id=row["quiz_id"],
@@ -142,25 +169,18 @@ class QuizSessionRepo(QuizSessionRepoPort):
         returns false - finish
         """
 
+        session = await self.get_session(session_id)
+        if not session:
+            return False
+
+        new_index = session.current_index + 1
         await self.db.execute(
-            "UPDATE quiz_sessions SET current_question = current_question + 1 WHERE id = ?",
-            (session_id, ),
+            "UPDATE quiz_sessions SET current_index = ? WHERE id = ?",
+            (new_index, session_id),
             commit=True
         )
 
-        row = await self.db.fetchone(
-            """
-            SELECT q.id FROM 
-            quiz_sessions s
-            JOIN questions q
-                ON q.quiz_id = s.quiz_id
-                AND q.number = s.current_question + 1
-            WHERE s.id = ?
-            """,
-            (session_id, )
-        )
-
-        return row is not None
+        return new_index < len(session.question_order)
 
     # Answers
     async def add_answer(self, answer: QuizAnswer) -> None:
@@ -192,6 +212,10 @@ class QuizSessionRepo(QuizSessionRepoPort):
         ]
 
     async def get_score(self, session_id: int) -> tuple[int, int] | None:
+        session = await self.get_session(session_id)
+        if not session:
+            return None
+        
         row = await self.db.fetchone(
             """
             SELECT 
@@ -206,6 +230,6 @@ class QuizSessionRepo(QuizSessionRepoPort):
         if row is None:
             return None
 
-        return (row["correct"] or 0, row["total"] or 0)
+        return (row["correct"] or 0, len(session.question_order) or 0)
 
 

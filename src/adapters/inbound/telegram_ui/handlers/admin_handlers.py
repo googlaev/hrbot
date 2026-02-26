@@ -5,18 +5,38 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram import Router
 from aiogram.types import BufferedInputFile
+from aiogram.fsm.state import StatesGroup, State
 
 from app.app_actions import AppActions
 
 admin_router = Router()
 
+class AddQuiz(StatesGroup):
+    waiting_for_file = State()
+
 # ============================ Хендлеры команд ============================
 
 @admin_router.message(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer("Привет, администратор! /list_quiz для меню тестов.")
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
 
-@admin_router.message(Command("list_quiz"))
+    await message.answer("Привет, администратор! /quiz для меню тестов.")
+
+@admin_router.message(Command("help"))
+async def admin_help(message: Message):
+    help_text = (
+        "📌 *Инструкция администратора:*\n\n"
+        "/quiz - Меню управления тестами\n"
+        "/add\\_quiz - Добавить новый тест через .xlsx файл\n\n"
+        "*Функции меню теста:*\n"
+        "- Просмотр всех попыток пользователей\n"
+        "- Удаление теста\n"
+        "- Экспорт результатов в Excel\n\n"
+    )
+
+    await message.answer(help_text, parse_mode="Markdown")
+
+@admin_router.message(Command("quiz"))
 async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FSMContext, actions: AppActions):
     quizzes = await actions.quiz_list.execute()
 
@@ -175,8 +195,19 @@ async def back_callback(callback: types.CallbackQuery, state: FSMContext, action
 
 # ========================= Обработка файлов ============================
 
-@admin_router.message(F.document)
-async def handle_document(message: Message, bot: Bot, actions: AppActions, user_id: int):
+@admin_router.message(Command("add_quiz"))
+async def add_quiz_start(message: Message, state: FSMContext):
+    await message.answer("Отправьте .xlsx файл с тестом.")
+    await state.set_state(AddQuiz.waiting_for_file)
+
+@admin_router.message(AddQuiz.waiting_for_file, F.document)
+async def add_quiz_file(
+    message: Message,
+    bot: Bot,
+    state: FSMContext,
+    actions: AppActions,
+    user_id: int
+):
     document = message.document
     if not document:
         await message.answer("Нет документа")
@@ -190,20 +221,27 @@ async def handle_document(message: Message, bot: Bot, actions: AppActions, user_
 
     file = await bot.get_file(document.file_id)
     file_data = await bot.download_file(file.file_path)
-    
+
     quiz = await actions.add_quiz_from_excel.execute(file_data.getvalue(), user_id)
 
     if quiz is None:
-        await mess.edit_text("Что то пошло не так...")
+        await mess.edit_text("Что-то пошло не так...")
+        await state.clear()
         return
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="ОК", callback_data="close")]]
     )
 
-    message = f"Тест успешно импортирован!\n\nid: {quiz.id}\nНазвание теста: {quiz.title}"
+    text = (
+        f"Тест успешно импортирован!\n\n"
+        f"id: {quiz.id}\n"
+        f"Название теста: {quiz.title}"
+    )
 
-    await mess.edit_text(message, reply_markup=keyboard)
+    await mess.edit_text(text, reply_markup=keyboard)
+
+    await state.clear()
 
 # ============================ Заглушка колбэка =================================
 

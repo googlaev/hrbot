@@ -36,7 +36,9 @@ async def main():
     # -------- Infra --------
     tz_clock = TZClock(os.getenv("TIMEZONE", "UTC"))
 
-    setup_logger(name="HRBOT", log_dir="logs", clock=tz_clock, debug_enabled=False)
+    debug_enabled = os.getenv("DEBUG_ENABLED", "0") == "1"
+
+    setup_logger(name="HRBOT", log_dir="logs", clock=tz_clock, debug_enabled=debug_enabled)
 
     logger = get_logger()
 
@@ -74,7 +76,7 @@ async def main():
     )
 
     # -------- Indound adapters --------
-    TelegramUI(tg_bot, actions)
+    await TelegramUI(tg_bot, actions).setup()
     
     logger.info("✅ Program started")
 

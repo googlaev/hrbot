@@ -7,9 +7,10 @@ class QuizSession:
     id: int | None
     user_id: int
     quiz_id: int
-    started_at: datetime
+    question_order: list[int]
+    current_index: int = 0
+    started_at: datetime | None = None
     finished_at: datetime | None = None
-    current_question: int = 0
     completed: bool = False
 
 

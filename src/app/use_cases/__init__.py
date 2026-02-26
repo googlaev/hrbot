@@ -9,6 +9,7 @@ from .user.set_user_name import SetUserNameUC
 from .quiz_session.get_completed_quizzes import GetCompletedQuizzesUC
 from .quiz.delete_quiz import DeleteQuizUC
 from .export_attempts import ExcelExportAttemptsUC
+from .quiz_session.finish_quiz import FinishQuizUC
 
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "SetUserNameUC",
     "GetCompletedQuizzesUC",
     "DeleteQuizUC",
-    "ExcelExportAttemptsUC"
+    "ExcelExportAttemptsUC",
+    "FinishQuizUC"
 ]

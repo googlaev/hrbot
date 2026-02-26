@@ -9,7 +9,7 @@ __pycache__/
 logs/
 
 # Database
-data/
+# data/
 
 # IDE files
 .vscode/
