@@ -16,7 +16,7 @@ class QuizRepo(QuizRepoPort):
     async def get_questions(self, quiz_id: int) -> list[Question]:
         rows = await self.db.fetchall(
             """
-            SELECT id, quiz_id, number, question_text, right_answer, wrong_answers
+            SELECT id, quiz_id, number, question_text, right_answer, wrong_answers_json
             FROM questions WHERE quiz_id=? ORDER BY id
             """,
             (quiz_id,)
@@ -29,7 +29,7 @@ class QuizRepo(QuizRepoPort):
                 number=r["number"],
                 question_text=r["question_text"],
                 right_answer=r["right_answer"],
-                wrong_answers=json.load(r["wrong_answers_json"])
+                wrong_answers=json.loads(r["wrong_answers_json"])
             )
             for r in rows
         ]

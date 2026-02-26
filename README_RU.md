@@ -75,6 +75,7 @@ pip install -r requirements.txt
 ```
 TIMEZONE="Europe/Moscow"
 TG_BOT_TOKEN="ВАШ_ТОКЕН_ОТ_BotFather"
+DEBUG_ENABLED="1/0"
 ```
 
 ---

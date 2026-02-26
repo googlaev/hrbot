@@ -62,10 +62,13 @@ async def setup_database(db: SqliteDatabase) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             quiz_id INTEGER NOT NULL,
+
+            question_order TEXT,
+            current_index INTEGER NOT NULL DEFAULT 0,
+            completed INTEGER NOT NULL DEFAULT 0,
+
             started_at DATETIME NOT NULL,
-            finished_at DATETIME,
-            current_question INTEGER NOT NULL DEFAULT 0,
-            completed INTEGER NOT NULL DEFAULT 0
+            finished_at DATETIME
         );
         """
     )
