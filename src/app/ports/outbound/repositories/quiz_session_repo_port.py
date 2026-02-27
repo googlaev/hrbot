@@ -6,7 +6,7 @@ from domain.entities.quiz import Question
 
 class QuizSessionRepoPort(Protocol):
     # Sessions
-    async def create_session(self, user_id: int, quiz_id: int) -> QuizSession | None:
+    async def create_session(self, user_id: int, quiz_id: int, question_order: list[int]) -> QuizSession | None:
         ...
     
     async def get_session(self, session_id: int) -> QuizSession | None:

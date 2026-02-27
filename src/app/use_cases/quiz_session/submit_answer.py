@@ -24,19 +24,13 @@ class SubmitAnswerUC:
         if question is None or question.id is None:
             raise RuntimeError("No active question for session")
 
-        # Convert index → real selected answer (string)
-        try:
-            selected_answer = question.options[answer_index]
-        except IndexError:
-            raise ValueError("Invalid answer index")
-
-        is_correct = (selected_answer == question.right_answer)
+        is_correct = question.check_answer(answer_index)
 
         quiz_answer = QuizAnswer(
             id=None,
             session_id=session_id,
             question_id=question.id,
-            selected_answer=selected_answer,
+            answer_index=answer_index,
             is_correct=is_correct
         )
 

@@ -32,9 +32,11 @@ class StartQuizUC:
         # TODO: Place in entity
         questions_cnt = 5
         questions_cnt = min(len(questions), questions_cnt)
+        
+        random.shuffle(questions)
         reduced_questions = questions[:questions_cnt]
         question_ids = [q.id for q in reduced_questions]
-        random.shuffle(question_ids)
+        
 
         session = await self.quiz_session_repo.create_session(
             user_id=user_id, 

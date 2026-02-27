@@ -123,6 +123,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
             FROM quiz_sessions
             WHERE user_id = ?
               AND quiz_id = ?
+              AND started_at >= DATE('now', 'start of day')
             """,
             (user_id, quiz_id, )
         )
@@ -186,10 +187,10 @@ class QuizSessionRepo(QuizSessionRepoPort):
     async def add_answer(self, answer: QuizAnswer) -> None:
         await self.db.execute(
             """
-            INSERT INTO quiz_answers (session_id, question_id, selected_answer, is_correct, timestamp)
+            INSERT INTO quiz_answers (session_id, question_id, answer_index, is_correct, timestamp)
             VALUES (?, ?, ?, ?, ?)
             """,
-            (answer.session_id, answer.question_id, answer.selected_answer, int(answer.is_correct), self.tz_clock.now()),
+            (answer.session_id, answer.question_id, answer.answer_index, int(answer.is_correct), self.tz_clock.now()),
             commit=True
         )
 
@@ -204,7 +205,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
                 id=row["id"],
                 session_id=row["session_id"],
                 question_id=row["question_id"],
-                selected_answer=row["selected_answer"],
+                answer_index=row["answer_index"],
                 is_correct=bool(row["is_correct"]),
                 timestamp=row["timestamp"]
             )
