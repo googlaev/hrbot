@@ -79,7 +79,7 @@ async def setup_database(db: SqliteDatabase) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INTEGER NOT NULL,
             question_id INTEGER NOT NULL,
-            selected_answer TEXT NOT NULL,
+            answer_index TEXT NOT NULL,
             is_correct INTEGER NOT NULL,
             timestamp DATETIME NOT NULL,
             FOREIGN KEY(session_id) REFERENCES quiz_sessions(id) ON DELETE CASCADE

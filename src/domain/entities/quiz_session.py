@@ -19,7 +19,7 @@ class QuizAnswer:
     id: int | None
     session_id: int
     question_id: int
-    selected_answer: str
+    answer_index: int
     is_correct: bool
     timestamp: datetime | None = None
 

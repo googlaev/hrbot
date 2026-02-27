@@ -121,9 +121,12 @@ async def handle_answer(callback: types.CallbackQuery, state: FSMContext, action
     if callback_data is None:
         return
     
-    answer_index = int(callback_data.split("|")[1])
+    display_index = int(callback_data.split("|")[1])
+
     data = await state.get_data()
     session_id = data["session_id"]
+    answer_map = data["answer_map"]
+    answer_index = answer_map[display_index]
 
     finish = await actions.submit_answer.execute(session_id, answer_index)
 
@@ -163,13 +166,30 @@ async def send_question(
         await message.answer("Ошибка: больше нет вопросов.")
         return
 
-    options_text = "\n".join([f"{i+1}) {opt}\n" for i, opt in enumerate(question.options)])
+    options = question.build_options()
+
+    # store mapping into FSM:
+    # display_index -> real index
+    mapping = {opt.display_index: opt.index for opt in options}
+
+    await state.update_data(answer_map=mapping)
+
+    # generate text
+    options_text = "\n".join(
+        [f"{opt.display_index+1}) {opt.text}" for opt in options]
+    )
 
     message_text = f"*{question.number}. {question.question_text}*\n\n{options_text}"
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=str(i+1), callback_data=f"answer|{i}") for i in range(len(question.options))],
+            [
+                InlineKeyboardButton(
+                    text=str(opt.display_index + 1),
+                    callback_data=f"answer|{opt.display_index}"
+                )
+                for opt in options
+            ],
             [InlineKeyboardButton(text="Завершить", callback_data="finish_now")]
         ]
     )
