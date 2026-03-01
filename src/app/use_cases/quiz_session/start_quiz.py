@@ -3,6 +3,7 @@ import random
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
 from app.ports.outbound.repositories.users_repo_port import UsersRepoPort
 from app.ports.outbound.repositories.quiz_repo_port import QuizRepoPort
+from domain.entities.quiz_session import QuizSession
 
 
 class StartQuizUC:
@@ -36,13 +37,25 @@ class StartQuizUC:
         random.shuffle(questions)
         reduced_questions = questions[:questions_cnt]
         question_ids = [q.id for q in reduced_questions]
-        
 
-        session = await self.quiz_session_repo.create_session(
-            user_id=user_id, 
-            quiz_id=quiz_id, 
-            question_order=question_ids
+        options_order: dict[int, list[int]] = {}
+
+        for idx, question in enumerate(reduced_questions):
+            base = [0] + list(range(1, len(question.wrong_answers) + 1))
+            random.shuffle(base)
+            options_order[idx] = base
+        
+        session = QuizSession(
+            id=None,
+            user_id=user_id,
+            quiz_id=quiz_id,
+            question_order=question_ids, # type: ignore
+            question_options_order=options_order
         )
+
+        session_id = await self.quiz_session_repo.add_session(session)
+
+        session.id = session_id
 
         result["quiz_session"] = session
         return result

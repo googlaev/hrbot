@@ -8,10 +8,29 @@ class QuizSession:
     user_id: int
     quiz_id: int
     question_order: list[int]
+    question_options_order: dict[str, list[int]]
+    
     current_index: int = 0
+    question_started_at: datetime | None = None
+    question_timeout: int = 30
+
     started_at: datetime | None = None
     finished_at: datetime | None = None
     completed: bool = False
+    
+    def get_current_question_id(self) -> int | None:
+        if self.current_index >= len(self.question_order):
+            return None 
+        
+        return self.question_order[self.current_index]
+    
+    def get_current_options_order(self) -> list[int] | None:
+        if self.current_index >= len(self.question_options_order):
+            return None 
+        
+        shuffled_indices = self.question_options_order[str(self.current_index)]
+
+        return shuffled_indices
 
 
 @dataclass

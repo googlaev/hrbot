@@ -15,27 +15,37 @@ class QuizSessionRepo(QuizSessionRepoPort):
         self.logger = get_logger(__class__.__name__)
 
     # Sessions
-    async def create_session(self, user_id: int, quiz_id: int, question_order: list[int]) -> QuizSession | None:
+    async def add_session(self, session: QuizSession) -> int | None:
         cursor = await self.db.execute(
             """
-            INSERT INTO quiz_sessions (user_id, quiz_id, started_at, question_order)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO quiz_sessions (user_id, quiz_id, question_timeout, started_at, question_order, question_options_order)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (user_id, quiz_id, self.tz_clock.now(), json.dumps(question_order)),
+            (
+                session.user_id,
+                session.quiz_id,
+                session.question_timeout,
+                session.started_at or self.tz_clock.now(),
+                json.dumps(session.question_order),
+                json.dumps(session.question_options_order)
+            ),
             commit=True
         )
 
         session_id = cursor.lastrowid
-
         if session_id is None:
-            self.logger.warning("session_id is None in create_session")
+            self.logger.warning("session_id is None in add_session")
             return
 
-        return await self.get_session(session_id)
+        return session_id
 
     async def get_session(self, session_id: int) -> QuizSession | None:
         row = await self.db.fetchone(
-            "SELECT * FROM quiz_sessions WHERE id = ?",
+            """
+            SELECT * 
+            FROM quiz_sessions 
+            WHERE id = ?
+            """,
             (session_id, )
         )
 
@@ -46,13 +56,13 @@ class QuizSessionRepo(QuizSessionRepoPort):
             id=row["id"],
             user_id=row["user_id"],
             quiz_id=row["quiz_id"],
-
-            finished_at = datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
-            started_at = datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
-
-            question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+            question_order=json.loads(row["question_order"]),
+            question_options_order=json.loads(row["question_options_order"]),
             current_index=row["current_index"],
-
+            question_timeout=row["question_timeout"],
+            question_started_at=datetime.fromisoformat(row["question_started_at"]) if row["question_started_at"] else None,
+            started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
+            finished_at=datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
             completed=bool(row["completed"])
         )
     
@@ -75,10 +85,13 @@ class QuizSessionRepo(QuizSessionRepoPort):
             id=row["id"],
             user_id=row["user_id"],
             quiz_id=row["quiz_id"],
-            started_at=row["started_at"],
-            finished_at=row["finished_at"],
-            question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+            question_order=json.loads(row["question_order"]),
+            question_options_order=json.loads(row["question_options_order"]),
             current_index=row["current_index"],
+            question_timeout=row["question_timeout"],
+            question_started_at=datetime.fromisoformat(row["question_started_at"]) if row["question_started_at"] else None,
+            started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
+            finished_at=datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
             completed=bool(row["completed"])
         )
 
@@ -134,16 +147,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
         return row["cnt"] or 0
 
     # Questions
-    async def get_current_question(self, session_id: int) -> Question | None:
-        session = await self.get_session(session_id)
-        if not session:
-            return None
-
-        if session.current_index >= len(session.question_order):
-            return None  # session finished
-
-        question_id = session.question_order[session.current_index]
-
+    async def get_question(self, question_id: int) -> Question | None:
         row = await self.db.fetchone(
             """
             SELECT id, quiz_id, number, question_text, right_answer, wrong_answers_json
@@ -164,24 +168,24 @@ class QuizSessionRepo(QuizSessionRepoPort):
             wrong_answers=json.loads(row["wrong_answers_json"])
         )
 
-    async def advance_question(self, session_id: int) -> bool:
-        """
-        returns true - next question exists
-        returns false - finish
-        """
-
-        session = await self.get_session(session_id)
-        if not session:
-            return False
-
-        new_index = session.current_index + 1
+    async def start_question(self, session_id: int):
+        now = self.tz_clock.now()
         await self.db.execute(
-            "UPDATE quiz_sessions SET current_index = ? WHERE id = ?",
-            (new_index, session_id),
+            "UPDATE quiz_sessions SET question_started_at = ? WHERE id = ?",
+            (now, session_id),
             commit=True
         )
 
-        return new_index < len(session.question_order)
+    async def advance_question(self, session_id: int):
+        await self.db.execute(
+            """
+            UPDATE quiz_sessions
+            SET current_index = current_index + 1
+            WHERE id = ?
+            """,
+            (session_id,),
+            commit=True
+        )
 
     # Answers
     async def add_answer(self, answer: QuizAnswer) -> None:
@@ -212,10 +216,10 @@ class QuizSessionRepo(QuizSessionRepoPort):
             for row in rows
         ]
 
-    async def get_score(self, session_id: int) -> tuple[int, int] | None:
+    async def get_score(self, session_id: int) -> tuple[int, int]:
         session = await self.get_session(session_id)
         if not session:
-            return None
+            return (0, 0)
         
         row = await self.db.fetchone(
             """
@@ -229,7 +233,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
         )
 
         if row is None:
-            return None
+            return (0, 0)
 
         return (row["correct"] or 0, len(session.question_order) or 0)
 
