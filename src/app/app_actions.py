@@ -31,4 +31,6 @@ class AppActions:
         self.delete_quiz = DeleteQuizUC(quiz_repo=quiz_repo)
         self.excel_export_attempts = ExcelExportAttemptsUC(quiz_session_repo=quiz_session_repo, excel_exporter=excel_exporter)
         self.finish_quiz = FinishQuizUC(quiz_session_repo=quiz_session_repo)
+        self.quiz_settings = QuizSettingsUC(quiz_repo=quiz_repo)
+        self.get_quiz = GetQuizUC(quiz_repo=quiz_repo)
 

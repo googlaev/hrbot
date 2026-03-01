@@ -22,3 +22,5 @@ class Question:
 class Quiz:
     id: int | None
     title: str
+    daily_attempt_limit: int = 1
+    question_count: int = 5

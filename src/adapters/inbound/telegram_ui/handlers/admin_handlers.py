@@ -14,6 +14,10 @@ admin_router = Router()
 class AddQuiz(StatesGroup):
     waiting_for_file = State()
 
+class QuizSettingsStates(StatesGroup):
+    waiting_for_new_question_count = State()
+    waiting_for_new_attempt_limit = State()
+
 # ============================ Хендлеры команд ============================
 
 @admin_router.message(Command("start"))
@@ -38,15 +42,15 @@ async def admin_help(message: Message):
 
 @admin_router.message(Command("quiz"))
 async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FSMContext, actions: AppActions):
+    await state.clear()
     quizzes = await actions.quiz_list.execute()
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"id: {q.id} - {q.title}", callback_data=f"quiz_menu|{q.id}")] for q in quizzes
+            [InlineKeyboardButton(text=f"(id: {q.id}) {q.title}", callback_data=f"quiz_menu|{q.id}")] for q in quizzes
         ]
     )
 
-    await state.clear()
     await state.update_data(menu_stack=["list_quiz"])
 
     if isinstance(tg_object, types.Message):
@@ -58,7 +62,9 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
         await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
 
 @admin_router.callback_query(F.data.startswith("quiz_menu|"))
-async def quiz_menu(callback: types.CallbackQuery, state: FSMContext):
+async def quiz_menu(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    await state.set_state(None)
+
     quiz_id: int | None = None
 
     if callback.data and "|" in callback.data:
@@ -78,20 +84,97 @@ async def quiz_menu(callback: types.CallbackQuery, state: FSMContext):
 
     await state.update_data(selected_quiz_id=quiz_id)
 
+    quiz = await actions.get_quiz.execute(quiz_id)
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех попыток", callback_data="view_attempts")],
             [InlineKeyboardButton(text="Пройти тест", callback_data=f"quiz|{quiz_id}")],
-            [InlineKeyboardButton(text="Кол-во вопросов", callback_data=f"q1uiz|{quiz_id}")],
-            [InlineKeyboardButton(text="Кол-во попыток в день", callback_data=f"qui1z|{quiz_id}")],
+            [InlineKeyboardButton(text=f"Кол-во вопросов: {quiz.question_count}", callback_data=f"edit_qcount|{quiz_id}")],
+            [InlineKeyboardButton(text=f"Кол-во попыток в день: {quiz.daily_attempt_limit}", callback_data=f"edit_attempts|{quiz_id}")],
             [InlineKeyboardButton(text="Удалить тест", callback_data="delete_quiz")],
             [InlineKeyboardButton(text="Назад", callback_data="back")],
         ]
     )
+
     await callback.message.edit_text(
-        text=f"Меню теста id={quiz_id}", 
+        text=f"(id: {quiz_id}) Тест: `{quiz.title}`", 
+        parse_mode="Markdown",
         reply_markup=keyboard
     )
+
+# ========================= Quiz settings ==============================
+@admin_router.callback_query(F.data.startswith("edit_qcount|"))
+async def edit_question_count(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    quiz_id = int(callback.data.split("|")[1])
+
+    await state.update_data(edit_quiz_id=quiz_id)
+    await state.update_data(quiz_menu_callback=callback)
+    await state.set_state(QuizSettingsStates.waiting_for_new_question_count)
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Назад", callback_data=f"quiz_menu|{quiz_id}")]
+        ]
+    )
+
+    await callback.message.edit_text(
+        text="Введите кол-во вопросов в тесте:",
+        reply_markup=keyboard
+    )
+
+@admin_router.message(QuizSettingsStates.waiting_for_new_question_count)
+async def set_new_question_count(message: types.Message, state: FSMContext, actions: AppActions):
+    if not message.text.isdigit():
+        await message.reply("Введите число.")
+        return
+    
+    value = int(message.text)
+    data = await state.get_data()
+    quiz_id = data["edit_quiz_id"]
+
+    await actions.quiz_settings.update_quiz_question_count(quiz_id, value)
+
+    callback = data["quiz_menu_callback"]
+
+    await quiz_menu(callback, state, actions)
+    await message.delete()
+
+@admin_router.callback_query(F.data.startswith("edit_attempts|"))
+async def edit_attempts_limit(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    quiz_id = int(callback.data.split("|")[1])
+
+    await state.update_data(edit_quiz_id=quiz_id)
+    await state.update_data(quiz_menu_callback=callback)
+    await state.set_state(QuizSettingsStates.waiting_for_new_attempt_limit)
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Назад", callback_data=f"quiz_menu|{quiz_id}")]
+        ]
+    )
+
+    await callback.message.edit_text(
+        text="Введите макс. кол-во попыток:",
+        reply_markup=keyboard
+    )
+
+@admin_router.message(QuizSettingsStates.waiting_for_new_attempt_limit)
+async def set_new_daily_attempt_limit(message: types.Message, state: FSMContext, actions: AppActions):
+    if not message.text.isdigit():
+        await message.reply("Введите число.")
+        return
+    
+    value = int(message.text)
+    data = await state.get_data()
+    quiz_id = data["edit_quiz_id"]
+
+    await actions.quiz_settings.update_quiz_attempt_limit(quiz_id, value)
+
+    callback = data["quiz_menu_callback"]
+
+    await quiz_menu(callback, state, actions)
+    await message.delete()
 
 @admin_router.callback_query(F.data.startswith("view_attempts"))
 async def view_attempts(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
@@ -194,7 +277,7 @@ async def back_callback(callback: types.CallbackQuery, state: FSMContext, action
     if previous_menu == "list_quiz":
         await list_quizzes(callback, state, actions)
     elif previous_menu == "quiz_menu":
-        await quiz_menu(callback, state)
+        await quiz_menu(callback, state, actions)
 
 # ========================= Обработка файлов ============================
 

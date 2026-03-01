@@ -24,15 +24,19 @@ class StartQuizUC:
             result["quiz_session"] = session
             return result
         
+        quiz = await self.quiz_repo.get_quiz_by_id(quiz_id)
+        if quiz is None:
+            raise
+        
         if not user.can_access_admin_panel():
             attempts_today = await self.quiz_session_repo.count_sessions_today(user_id, quiz_id)
-            if attempts_today >= 1:
+            if attempts_today >= quiz.daily_attempt_limit:
                 return { "limit_reached": True }
         
         questions = await self.quiz_repo.get_questions(quiz_id)
 
         # TODO: Place in entity
-        questions_cnt = 5
+        questions_cnt = quiz.question_count
         questions_cnt = min(len(questions), questions_cnt)
         
         random.shuffle(questions)

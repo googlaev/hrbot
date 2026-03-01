@@ -116,6 +116,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
                 started_at=datetime.fromisoformat(row["started_at"]),
                 finished_at=datetime.fromisoformat(row["finished_at"]),
                 question_order=json.loads(row["question_order"]) if row["question_order"] else [],
+                question_options_order=json.loads(row["question_options_order"]),
                 current_index=row["current_index"],
                 completed=True
             )
