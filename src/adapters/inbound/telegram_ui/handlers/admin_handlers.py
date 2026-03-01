@@ -112,6 +112,11 @@ async def edit_question_count(callback: types.CallbackQuery, state: FSMContext, 
     await state.update_data(quiz_menu_callback=callback)
     await state.set_state(QuizSettingsStates.waiting_for_new_question_count)
 
+    data = await state.get_data()
+    menu_stack = data.get("menu_stack", [])
+    menu_stack.append("edit_question_menu")
+    await state.update_data(menu_stack=menu_stack)
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Назад", callback_data=f"quiz_menu|{quiz_id}")]
@@ -137,7 +142,7 @@ async def set_new_question_count(message: types.Message, state: FSMContext, acti
 
     callback = data["quiz_menu_callback"]
 
-    await quiz_menu(callback, state, actions)
+    await back_callback(callback, state, actions)
     await message.delete()
 
 @admin_router.callback_query(F.data.startswith("edit_attempts|"))
@@ -148,6 +153,11 @@ async def edit_attempts_limit(callback: types.CallbackQuery, state: FSMContext, 
     await state.update_data(quiz_menu_callback=callback)
     await state.set_state(QuizSettingsStates.waiting_for_new_attempt_limit)
 
+    data = await state.get_data()
+    menu_stack = data.get("menu_stack", [])
+    menu_stack.append("edit_question_menu")
+    await state.update_data(menu_stack=menu_stack)
+    
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Назад", callback_data=f"quiz_menu|{quiz_id}")]
@@ -173,7 +183,7 @@ async def set_new_daily_attempt_limit(message: types.Message, state: FSMContext,
 
     callback = data["quiz_menu_callback"]
 
-    await quiz_menu(callback, state, actions)
+    await back_callback(callback, state, actions)
     await message.delete()
 
 @admin_router.callback_query(F.data.startswith("view_attempts"))
