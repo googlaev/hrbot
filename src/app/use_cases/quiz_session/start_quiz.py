@@ -24,9 +24,10 @@ class StartQuizUC:
             result["quiz_session"] = session
             return result
         
-        attempts_today = await self.quiz_session_repo.count_sessions_today(user_id, quiz_id)
-        if attempts_today >= 1:
-            return { "limit_reached": True }
+        if not user.can_access_admin_panel():
+            attempts_today = await self.quiz_session_repo.count_sessions_today(user_id, quiz_id)
+            if attempts_today >= 1:
+                return { "limit_reached": True }
         
         questions = await self.quiz_repo.get_questions(quiz_id)
 

@@ -42,7 +42,7 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"id: {q.id} - {q.title}", callback_data=f"quiz|{q.id}")] for q in quizzes
+            [InlineKeyboardButton(text=f"id: {q.id} - {q.title}", callback_data=f"quiz_menu|{q.id}")] for q in quizzes
         ]
     )
 
@@ -57,7 +57,7 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
     else:
         await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
 
-@admin_router.callback_query(F.data.startswith("quiz|"))
+@admin_router.callback_query(F.data.startswith("quiz_menu|"))
 async def quiz_menu(callback: types.CallbackQuery, state: FSMContext):
     quiz_id: int | None = None
 
@@ -81,6 +81,9 @@ async def quiz_menu(callback: types.CallbackQuery, state: FSMContext):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех попыток", callback_data="view_attempts")],
+            [InlineKeyboardButton(text="Пройти тест", callback_data=f"quiz|{quiz_id}")],
+            [InlineKeyboardButton(text="Кол-во вопросов", callback_data=f"q1uiz|{quiz_id}")],
+            [InlineKeyboardButton(text="Кол-во попыток в день", callback_data=f"qui1z|{quiz_id}")],
             [InlineKeyboardButton(text="Удалить тест", callback_data="delete_quiz")],
             [InlineKeyboardButton(text="Назад", callback_data="back")],
         ]
