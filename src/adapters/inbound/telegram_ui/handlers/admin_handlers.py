@@ -210,7 +210,7 @@ async def view_attempts(callback: types.CallbackQuery, state: FSMContext, action
         percent = q.percent
         start_str = q.started_at.strftime("%d %b %Y %H:%M")
         finish_str = q.finished_at.strftime("%d %b %Y %H:%M")
-        text += (f"👤 Айди юзера: {q.user_id}\n"
+        text += (f"👤 (id: {q.user_id}) {q.name}\n"
                  f"Правильность ответов: {q.correct}/{q.total} ({percent:.1f}%)\n"
                  f"Пройден - с: {start_str}  по: {finish_str}\n\n")
 

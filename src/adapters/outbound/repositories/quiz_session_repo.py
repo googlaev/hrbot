@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from datetime import datetime
 from domain.entities.quiz_session import QuizSession, QuizAnswer
 from domain.entities.quiz import Question
@@ -238,4 +239,27 @@ class QuizSessionRepo(QuizSessionRepoPort):
 
         return (row["correct"] or 0, len(session.question_order) or 0)
 
+    async def get_mistakes(self, session: QuizSession) -> list[dict[str, Any]]:
+        answers = await self.get_answers(session.id)
+        mistakes = []
 
+        for ans in answers:
+            if ans.is_correct:
+                continue
+
+            question = await self.get_question(ans.question_id)
+            if not question:
+                continue
+
+            all_options = question.get_options()
+
+            user_answer = all_options[int(ans.answer_index)]
+
+            mistakes.append({
+                "question_number": question.number,
+                "question_text": question.question_text,
+                "user_answer": user_answer,
+                "correct_answer": question.right_answer,
+            })
+
+        return mistakes

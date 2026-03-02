@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Protocol
+from typing import Protocol, Any
 from domain.entities.quiz_session import QuizSession, QuizAnswer
 from domain.entities.quiz import Question
 
@@ -44,4 +44,5 @@ class QuizSessionRepoPort(Protocol):
     async def get_score(self, session_id: int) -> tuple[int, int] | None:
         ...
 
-
+    async def get_mistakes(self, session: QuizSession) -> list[dict[str, Any]]:
+        ...
