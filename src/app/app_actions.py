@@ -5,6 +5,7 @@ from app.ports.outbound.excel_parser_port import ExcelParserPort
 from app.ports.outbound.repositories.telegram_auth_repo_port import TelegramAuthRepoPort
 from app.ports.outbound.repositories.quiz_session_repo_port import QuizSessionRepoPort
 from app.ports.outbound.excel_exporter_port import ExcelExporterPort
+from infra.tz_clock import TZClock
 
 
 class AppActions:
@@ -15,18 +16,21 @@ class AppActions:
         quiz_repo: QuizRepoPort,
         excel_parser: ExcelParserPort,
         quiz_session_repo: QuizSessionRepoPort,
-        excel_exporter: ExcelExporterPort
+        excel_exporter: ExcelExporterPort,
+        clock: TZClock
     ):
         self.add_quiz_from_excel = AddQuizFromExcelUC(parser=excel_parser, quiz_repo=quiz_repo)
         self.auth_by_telegram = AuthenticateByTelegramUC(users_repo=users_repo, tg_auth_repo=tg_auth_repo)
         self.check_admin_access = CheckAdminAccessUC(users_repo=users_repo)
-        self.get_current_question = GetCurrentQuestionUC(quiz_session_repo=quiz_session_repo)
+        self.get_current_question = GetCurrentQuestionUC(quiz_session_repo=quiz_session_repo, clock=clock)
         self.start_quiz = StartQuizUC(users_repo=users_repo, quiz_session_repo=quiz_session_repo, quiz_repo=quiz_repo)
         self.submit_answer = SubmitAnswerUC(quiz_session_repo=quiz_session_repo)
         self.quiz_list = QuizListUC(quiz_repo=quiz_repo)
         self.set_user_name = SetUserNameUC(users_repo=users_repo)
-        self.get_completed_quizzes = GetCompletedQuizzesUC(quiz_session_repo=quiz_session_repo)
+        self.get_completed_quizzes = GetCompletedQuizzesUC(quiz_session_repo=quiz_session_repo, users_repo=users_repo, quiz_repo=quiz_repo)
         self.delete_quiz = DeleteQuizUC(quiz_repo=quiz_repo)
-        self.excel_export_attempts = ExcelExportAttemptsUC(quiz_session_repo=quiz_session_repo, excel_exporter=excel_exporter)
+        self.excel_export_attempts = ExcelExportAttemptsUC(quiz_session_repo=quiz_session_repo, users_repo=users_repo, quiz_repo=quiz_repo, excel_exporter=excel_exporter)
         self.finish_quiz = FinishQuizUC(quiz_session_repo=quiz_session_repo)
+        self.quiz_settings = QuizSettingsUC(quiz_repo=quiz_repo)
+        self.get_quiz = GetQuizUC(quiz_repo=quiz_repo)
 

@@ -72,7 +72,8 @@ async def main():
         quiz_repo=quiz_repo,
         quiz_session_repo=quiz_session_repo,
         excel_parser=excel_parser,
-        excel_exporter=excel_exporter
+        excel_exporter=excel_exporter,
+        clock=tz_clock
     )
 
     # -------- Indound adapters --------

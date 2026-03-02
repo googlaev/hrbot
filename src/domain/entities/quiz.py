@@ -1,6 +1,4 @@
-import random
 from dataclasses import dataclass
-from domain.value_objects.option import Option
 
 
 @dataclass
@@ -12,18 +10,8 @@ class Question:
     right_answer: str
     wrong_answers: list[str]
 
-    def build_options(self):
-        # create base list with real indexes
-        opts = [
-            Option(index=i, display_index=i, text=text)
-            for i, text in enumerate([self.right_answer] + self.wrong_answers)
-        ]
-
-        # shuffle display order only
-        random.shuffle(opts)
-
-        for di, opt in enumerate(opts):
-            opt.display_index = di
+    def get_options(self):
+        opts = [self.right_answer] + self.wrong_answers
 
         return opts
     
@@ -34,3 +22,5 @@ class Question:
 class Quiz:
     id: int | None
     title: str
+    daily_attempt_limit: int = 1
+    question_count: int = 5

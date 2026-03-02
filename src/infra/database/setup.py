@@ -36,7 +36,9 @@ async def setup_database(db: SqliteDatabase) -> None:
         """
         CREATE TABLE IF NOT EXISTS quizzes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL
+            title TEXT NOT NULL,
+            daily_attempt_limit INTEGER NOT NULL,
+            question_count INTEGER NOT NULL
         );
         """
     )
@@ -64,7 +66,10 @@ async def setup_database(db: SqliteDatabase) -> None:
             quiz_id INTEGER NOT NULL,
 
             question_order TEXT,
+            question_options_order TEXT,
             current_index INTEGER NOT NULL DEFAULT 0,
+            question_started_at DATETIME DEFAULT NULL,
+            question_timeout INTEGER NOT NULL,
             completed INTEGER NOT NULL DEFAULT 0,
 
             started_at DATETIME NOT NULL,

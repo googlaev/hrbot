@@ -10,6 +10,8 @@ from .quiz_session.get_completed_quizzes import GetCompletedQuizzesUC
 from .quiz.delete_quiz import DeleteQuizUC
 from .export_attempts import ExcelExportAttemptsUC
 from .quiz_session.finish_quiz import FinishQuizUC
+from .quiz.quiz_settings import QuizSettingsUC
+from .quiz.get_quiz import GetQuizUC
 
 
 __all__ = [
@@ -24,5 +26,7 @@ __all__ = [
     "GetCompletedQuizzesUC",
     "DeleteQuizUC",
     "ExcelExportAttemptsUC",
-    "FinishQuizUC"
+    "FinishQuizUC",
+    "QuizSettingsUC",
+    "GetQuizUC"
 ]
