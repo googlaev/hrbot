@@ -137,6 +137,8 @@ async def edit_question_count(callback: types.CallbackQuery, state: FSMContext, 
     menu_stack.append("edit_question_menu")
     await state.update_data(menu_stack=menu_stack)
 
+    quiz = await actions.get_quiz.execute(quiz_id)
+
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="Назад", callback_data=f"quiz_menu|{quiz_id}")]
@@ -144,7 +146,7 @@ async def edit_question_count(callback: types.CallbackQuery, state: FSMContext, 
     )
 
     await callback.message.edit_text(
-        text="Введите кол-во вопросов в тесте:",
+        text=f"Введите кол-во вопросов в тесте(1-{quiz.questions_len}):",
         reply_markup=keyboard
     )
 
@@ -185,7 +187,7 @@ async def edit_attempts_limit(callback: types.CallbackQuery, state: FSMContext, 
     )
 
     await callback.message.edit_text(
-        text="Введите макс. кол-во попыток:",
+        text="Введите макс. кол-во попыток в день(1-100):",
         reply_markup=keyboard
     )
 

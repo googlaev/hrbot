@@ -23,3 +23,4 @@ class QuizRepoPort(Protocol):
 
     async def delete_quiz(self, quiz_id: int) -> None:
         ...
+        

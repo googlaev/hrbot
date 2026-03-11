@@ -13,6 +13,7 @@ from .quiz_session.finish_quiz import FinishQuizUC
 from .quiz.quiz_settings import QuizSettingsUC
 from .quiz.get_quiz import GetQuizUC
 from .quiz.get_quiz_template import GetQuizTemplateUC
+from .quiz.quiz_rating import QuizRatingUC
 
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "FinishQuizUC",
     "QuizSettingsUC",
     "GetQuizUC",
-    "GetQuizTemplateUC"
+    "GetQuizTemplateUC",
+    "QuizRatingUC"
 ]

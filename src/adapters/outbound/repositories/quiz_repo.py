@@ -15,6 +15,7 @@ class QuizRepo(QuizRepoPort):
             Quiz(
                 id=row["id"], 
                 title=row["title"], 
+                questions_len=row["questions_len"],
                 daily_attempt_limit=row["daily_attempt_limit"],
                 question_count=row["question_count"]
             ) for row in rows
@@ -36,6 +37,7 @@ class QuizRepo(QuizRepoPort):
         return Quiz(
             id=row["id"], 
             title=row["title"],
+            questions_len=row["questions_len"],
             daily_attempt_limit=row["daily_attempt_limit"],
             question_count=row["question_count"]
         )
@@ -80,10 +82,10 @@ class QuizRepo(QuizRepoPort):
         quiz_id = await self.db.execute(
             """
             INSERT INTO quizzes 
-            (title, daily_attempt_limit, question_count) 
-            VALUES (?, ?, ?)
+            (title, daily_attempt_limit, questions_len, question_count) 
+            VALUES (?, ?, ?, ?)
             """,
-            (quiz.title, quiz.daily_attempt_limit, quiz.question_count),
+            (quiz.title, quiz.daily_attempt_limit, quiz.questions_len, quiz.question_count),
             commit=True
         )
 

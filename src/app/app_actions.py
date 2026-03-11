@@ -36,4 +36,5 @@ class AppActions:
         self.quiz_settings = QuizSettingsUC(quiz_repo=quiz_repo)
         self.get_quiz = GetQuizUC(quiz_repo=quiz_repo)
         self.get_quiz_template = GetQuizTemplateUC(excel_parser, csv_parser)
+        self.quiz_rating = QuizRatingUC(quiz_session_repo=quiz_session_repo)
 

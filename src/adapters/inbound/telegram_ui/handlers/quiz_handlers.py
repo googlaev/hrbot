@@ -15,7 +15,6 @@ class QuizStates(StatesGroup):
     in_quiz = State()
     finished = State()
 
-
 @quiz_router.callback_query(F.data.startswith("quiz|"))
 async def quiz_select(callback: types.CallbackQuery, user_id: int, state: FSMContext, actions: AppActions):
     message = callback.message
@@ -54,6 +53,38 @@ async def quiz_select(callback: types.CallbackQuery, user_id: int, state: FSMCon
         state=state,
         actions=actions, 
     )
+
+@quiz_router.callback_query(F.data.startswith("rating_quiz|"))
+async def show_rating(callback: types.CallbackQuery, actions: AppActions):
+
+    quiz_id = int(callback.data.split("|")[1])
+
+    rating = await actions.quiz_rating.execute(quiz_id)
+
+    if not rating:
+        text = "Пока никто не прошёл тест."
+    else:
+        text = "🏆 Топ 10 результатов\n\n"
+
+        for i, r in enumerate(rating, start=1):
+            text += (
+                f"{i}. {r['name']} — "
+                f"{r['percent']}% "
+                f"(попыток: {r['attempts']})\n"
+            )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Назад",
+                    callback_data="rating_back"
+                )
+            ]
+        ]
+    )
+
+    await callback.message.edit_text(text, reply_markup=keyboard)
 
 # ================== Handle name input ==================
 @quiz_router.message(QuizStates.waiting_for_name)

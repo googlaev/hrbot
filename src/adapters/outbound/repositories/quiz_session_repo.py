@@ -261,3 +261,36 @@ class QuizSessionRepo(QuizSessionRepoPort):
             })
 
         return mistakes
+    
+    async def get_quiz_rating(self, quiz_id: int) -> list[dict]:
+        rows = await self.db.fetchall(
+            """
+            SELECT
+                u.name AS name,
+                COUNT(DISTINCT qs.id) AS attempts,
+                MAX(
+                    (
+                        SELECT SUM(qa.is_correct) * 100.0 / COUNT(*)
+                        FROM quiz_answers qa
+                        WHERE qa.session_id = qs.id
+                    )
+                ) AS percent
+            FROM quiz_sessions qs
+            JOIN users u ON u.id = qs.user_id
+            WHERE qs.quiz_id = ?
+            AND qs.completed = 1
+            GROUP BY qs.user_id
+            ORDER BY percent DESC
+            LIMIT 10
+            """,
+            (quiz_id,)
+        )
+
+        return [
+            {
+                "name": row["name"],
+                "attempts": row["attempts"],
+                "percent": round(row["percent"] or 0, 2)
+            }
+            for row in rows
+        ]

@@ -29,7 +29,7 @@ class AddQuizUC:
             for q in parsed_quiz.questions
         ]
 
-        quiz = Quiz(id=None, title=parsed_quiz.name)
+        quiz = Quiz(id=None, questions_len=len(questions), title=parsed_quiz.name, question_count=len(questions))
         quiz_id = await self.quiz_repo.add_quiz(quiz, questions)
         quiz.id = quiz_id
 
@@ -54,7 +54,7 @@ class AddQuizUC:
             for q in parsed_quiz.questions
         ]
 
-        quiz = Quiz(id=None, title=parsed_quiz.name)
+        quiz = Quiz(id=None, questions_len=len(questions), title=parsed_quiz.name)
         quiz_id = await self.quiz_repo.add_quiz(quiz, questions)
         quiz.id = quiz_id
 
