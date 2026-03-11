@@ -7,11 +7,11 @@ from app.dtos.quiz_session_result import QuizSessionResultDto
 class ExcelExporter:
     def export_quiz_results(self, results: list[QuizSessionResultDto]) -> bytes:
         df = pd.DataFrame([{
-            "quiz_name": r.quiz_name,
-            "name": r.name,
-            "result": f"{r.correct}/{r.total}",
-            "percent": r.percent,
-            "mistakes": format_mistakes(r.mistakes)
+            "Название теста": r.quiz_name,
+            "ФИО": r.name,
+            "Результат": f"{r.correct}/{r.total}",
+            "Процент": r.percent,
+            "Ошибки": format_mistakes(r.mistakes)
         } for r in results])
 
         buffer = io.BytesIO()
