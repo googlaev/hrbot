@@ -24,16 +24,16 @@ class GetCurrentQuestionUC:
         session = await self.quiz_session_repo.get_session(session_id)
         if session is None:
             return QuestionWithTimerDTO(finished=True)
-
-        session, finished = await self._process_question_timeout(session)
-        if finished:
-            return QuestionWithTimerDTO(finished=True)
-
+        
         question_id = session.get_current_question_id()
         if question_id is None:
             return QuestionWithTimerDTO(finished=True)
 
         question = await self.quiz_session_repo.get_question(question_id)
+
+        session, finished = await self._process_question_timeout(session, question.time_to_answer) 
+        if finished:
+            return QuestionWithTimerDTO(finished=True)
 
         shuffled_indices = session.get_current_options_order()
         original_options = question.get_options()
@@ -49,7 +49,7 @@ class GetCurrentQuestionUC:
 
         now = self.clock.now()
         elapsed = (now - session.question_started_at).total_seconds() if session.question_started_at else 0
-        remaining = max(int(session.question_timeout - elapsed), 0)
+        remaining = max(int(question.time_to_answer - elapsed), 0)
 
         return QuestionWithTimerDTO(
             question_text=question.question_text,
@@ -60,7 +60,7 @@ class GetCurrentQuestionUC:
             finished=False
         )
 
-    async def _process_question_timeout(self, session: QuizSession) -> tuple[QuizSession, bool]:
+    async def _process_question_timeout(self, session: QuizSession, time_to_answer: int) -> tuple[QuizSession, bool]:
         now = self.clock.now()
 
         if session.id is None:
@@ -75,7 +75,7 @@ class GetCurrentQuestionUC:
             return session, False
 
         elapsed = (now - session.question_started_at).total_seconds()
-        remaining = session.question_timeout - elapsed
+        remaining = time_to_answer - elapsed
 
         if remaining <= 0:
             question_id = session.get_current_question_id()

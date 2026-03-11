@@ -6,6 +6,7 @@ class Question:
     id: int | None
     quiz_id: int | None
     number: int
+    time_to_answer: int
     question_text: str
     right_answer: str
     wrong_answers: list[str]

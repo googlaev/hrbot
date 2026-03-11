@@ -49,6 +49,7 @@ async def setup_database(db: SqliteDatabase) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             quiz_id INTEGER NOT NULL,
             number INTEGER NOT NULL,
+            time_to_answer INTEGER NOT NULL,
             question_text TEXT NOT NULL,
             right_answer TEXT NOT NULL,
             wrong_answers_json TEXT NOT NULL,
@@ -69,7 +70,6 @@ async def setup_database(db: SqliteDatabase) -> None:
             question_options_order TEXT,
             current_index INTEGER NOT NULL DEFAULT 0,
             question_started_at DATETIME DEFAULT NULL,
-            question_timeout INTEGER NOT NULL,
             completed INTEGER NOT NULL DEFAULT 0,
 
             started_at DATETIME NOT NULL,

@@ -1,14 +1,14 @@
 from dataclasses import dataclass
-from typing import List
 
 @dataclass
 class ParsedQuestion:
     number: int
     question: str
+    time_to_answer: int
     right_answer: str
-    wrong_answers: List[str]
+    wrong_answers: list[str]
 
 @dataclass
 class ParsedQuiz:
     name: str
-    questions: List[ParsedQuestion]
+    questions: list[ParsedQuestion]

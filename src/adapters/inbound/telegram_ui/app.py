@@ -40,5 +40,5 @@ class TelegramUI:
         self.dp.include_router(quiz_router)
 
 async def set_commands(bot: Bot):
-    commands = [BotCommand(command='help', description='Инструкция'), BotCommand(command='quiz', description='Список тестов')]
+    commands = [BotCommand(command='start', description='Обновить меню'), BotCommand(command='help', description='Инструкция'), BotCommand(command='quiz', description='Список тестов')]
     await bot.set_my_commands(commands, BotCommandScopeDefault())

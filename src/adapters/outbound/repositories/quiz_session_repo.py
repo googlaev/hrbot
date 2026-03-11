@@ -19,13 +19,12 @@ class QuizSessionRepo(QuizSessionRepoPort):
     async def add_session(self, session: QuizSession) -> int | None:
         cursor = await self.db.execute(
             """
-            INSERT INTO quiz_sessions (user_id, quiz_id, question_timeout, started_at, question_order, question_options_order)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO quiz_sessions (user_id, quiz_id, started_at, question_order, question_options_order)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 session.user_id,
                 session.quiz_id,
-                session.question_timeout,
                 session.started_at or self.tz_clock.now(),
                 json.dumps(session.question_order),
                 json.dumps(session.question_options_order)
@@ -60,7 +59,6 @@ class QuizSessionRepo(QuizSessionRepoPort):
             question_order=json.loads(row["question_order"]),
             question_options_order=json.loads(row["question_options_order"]),
             current_index=row["current_index"],
-            question_timeout=row["question_timeout"],
             question_started_at=datetime.fromisoformat(row["question_started_at"]) if row["question_started_at"] else None,
             started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
             finished_at=datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
@@ -89,7 +87,6 @@ class QuizSessionRepo(QuizSessionRepoPort):
             question_order=json.loads(row["question_order"]),
             question_options_order=json.loads(row["question_options_order"]),
             current_index=row["current_index"],
-            question_timeout=row["question_timeout"],
             question_started_at=datetime.fromisoformat(row["question_started_at"]) if row["question_started_at"] else None,
             started_at=datetime.fromisoformat(row["started_at"]) if row["started_at"] else None,
             finished_at=datetime.fromisoformat(row["finished_at"]) if row["finished_at"] else None,
@@ -152,7 +149,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
     async def get_question(self, question_id: int) -> Question | None:
         row = await self.db.fetchone(
             """
-            SELECT id, quiz_id, number, question_text, right_answer, wrong_answers_json
+            SELECT *
             FROM questions
             WHERE id = ?
             """,
@@ -165,6 +162,7 @@ class QuizSessionRepo(QuizSessionRepoPort):
             id=row["id"],
             quiz_id=row["quiz_id"],
             number=row["number"],
+            time_to_answer=row["time_to_answer"],
             question_text=row["question_text"],
             right_answer=row["right_answer"],
             wrong_answers=json.loads(row["wrong_answers_json"])

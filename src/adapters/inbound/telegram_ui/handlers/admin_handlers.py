@@ -23,8 +23,14 @@ class QuizSettingsStates(StatesGroup):
 @admin_router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
-
-    await message.answer("Привет, администратор! /quiz для меню тестов.")
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=[
+            [types.KeyboardButton(text="Посмотреть тесты"), types.KeyboardButton(text="Добавить тест")]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    await message.answer("Привет, администратор!", reply_markup=keyboard)
 
 @admin_router.message(Command("help"))
 async def admin_help(message: Message):
@@ -40,7 +46,7 @@ async def admin_help(message: Message):
 
     await message.answer(help_text, parse_mode="Markdown")
 
-@admin_router.message(Command("quiz"))
+@admin_router.message(F.text == "Посмотреть тесты")
 async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FSMContext, actions: AppActions):
     await state.clear()
     quizzes = await actions.quiz_list.execute()
@@ -60,6 +66,20 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
         await tg_object.answer("Список тестов:", reply_markup=keyboard)
     else:
         await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
+
+@admin_router.message(F.text == "Добавить тест")
+async def show_add_quiz_menu(message: types.Message, state: FSMContext):
+    await state.set_state(AddQuiz.waiting_for_file)
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [types.InlineKeyboardButton(text="Шаблон Excel", callback_data="template_excel"), 
+             types.InlineKeyboardButton(text="Шаблон CSV", callback_data="template_csv")]
+        ]
+    )
+    await message.answer(
+        "Отправьте файл с тестом (Excel, CSV):",
+        reply_markup=keyboard
+    )
 
 @admin_router.callback_query(F.data.startswith("quiz_menu|"))
 async def quiz_menu(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
@@ -291,11 +311,6 @@ async def back_callback(callback: types.CallbackQuery, state: FSMContext, action
 
 # ========================= Обработка файлов ============================
 
-@admin_router.message(Command("add_quiz"))
-async def add_quiz_start(message: Message, state: FSMContext):
-    await message.answer("Отправьте .xlsx файл с тестом.")
-    await state.set_state(AddQuiz.waiting_for_file)
-
 @admin_router.message(AddQuiz.waiting_for_file, F.document)
 async def add_quiz_file(
     message: Message,
@@ -309,22 +324,27 @@ async def add_quiz_file(
         await message.answer("Нет документа")
         return
 
-    if document.mime_type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-        await message.answer("Пожалуйста, отправьте файл формата .xlsx")
-        return
-
     mess = await message.answer("Файл получен. Начинаю обработку...")
 
     file = await bot.get_file(document.file_id)
-    file_data = await bot.download_file(file.file_path)
+    file_data = await bot.download_file(file.file_path)  # type: ignore
+    content = file_data.getvalue()  # type: ignore
 
-    quiz = await actions.add_quiz_from_excel.execute(file_data.getvalue(), user_id)
+    if document.file_name.endswith(".xlsx"):  # type: ignore
+        result = await actions.add_quiz.from_excel(content, user_id)
+    elif document.file_name.endswith(".csv"):  # type: ignore
+        result = await actions.add_quiz.from_csv(content, user_id)
+    else:
+        await mess.edit_text("Пожалуйста, отправьте файл формата .xlsx или .csv")
+        return
 
-    if quiz is None:
-        await mess.edit_text("Что-то пошло не так...")
+    if isinstance(result, list):
+        error_text = "Ошибки при импорте:\n" + "\n".join(result)
+        await mess.edit_text(error_text)
         await state.clear()
         return
 
+    quiz = result  # type: ignore
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="ОК", callback_data="close")]]
     )
@@ -334,10 +354,25 @@ async def add_quiz_file(
         f"id: {quiz.id}\n"
         f"Название теста: {quiz.title}"
     )
-
     await mess.edit_text(text, reply_markup=keyboard)
+    await state.set_state()
 
-    await state.clear()
+# ==================== Кнопки шаблонов ====================
+@admin_router.callback_query(F.data == "template_excel")
+async def send_template_excel(callback: types.CallbackQuery, actions: AppActions):
+    await callback.answer()
+    file_bytes = await actions.get_quiz_template.from_excel()
+    await callback.message.answer_document( #type: ignore
+        types.BufferedInputFile(file_bytes, filename="quiz_template.xlsx")
+    )
+
+@admin_router.callback_query(F.data == "template_csv")
+async def send_template_csv(callback: types.CallbackQuery, actions: AppActions):
+    await callback.answer()
+    file_bytes = await actions.get_quiz_template.from_csv()
+    await callback.message.answer_document( #type: ignore
+        types.BufferedInputFile(file_bytes, filename="quiz_template.csv")
+    )
 
 # ============================ Заглушка колбэка =================================
 
