@@ -1,4 +1,4 @@
-from .quiz.add_quiz_from_excel import AddQuizFromExcelUC
+from .quiz.add_quiz import AddQuizUC
 from .auth_by_telegram import AuthenticateByTelegramUC
 from .user.check_admin_access import CheckAdminAccessUC
 from .quiz_session.get_current_question import GetCurrentQuestionUC
@@ -12,10 +12,12 @@ from .export_attempts import ExcelExportAttemptsUC
 from .quiz_session.finish_quiz import FinishQuizUC
 from .quiz.quiz_settings import QuizSettingsUC
 from .quiz.get_quiz import GetQuizUC
+from .quiz.get_quiz_template import GetQuizTemplateUC
+from .quiz.quiz_rating import QuizRatingUC
 
 
 __all__ = [
-    "AddQuizFromExcelUC",
+    "AddQuizUC",
     "AuthenticateByTelegramUC",
     "CheckAdminAccessUC",
     "GetCurrentQuestionUC",
@@ -28,5 +30,7 @@ __all__ = [
     "ExcelExportAttemptsUC",
     "FinishQuizUC",
     "QuizSettingsUC",
-    "GetQuizUC"
+    "GetQuizUC",
+    "GetQuizTemplateUC",
+    "QuizRatingUC"
 ]

@@ -3,5 +3,8 @@ from app.dtos.quiz import ParsedQuiz
 
 
 class ExcelParserPort(Protocol):
-    def parse_quiz(self, excel_bytes: bytes) -> ParsedQuiz | None:
+    def parse_quiz(self, excel_bytes: bytes) -> tuple[ParsedQuiz | None, list[str]]:
+        ...
+
+    def get_template(self) -> bytes:
         ...

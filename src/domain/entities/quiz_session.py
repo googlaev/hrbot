@@ -12,7 +12,6 @@ class QuizSession:
     
     current_index: int = 0
     question_started_at: datetime | None = None
-    question_timeout: int = 30
 
     started_at: datetime | None = None
     finished_at: datetime | None = None

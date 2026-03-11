@@ -55,7 +55,7 @@ class StartQuizUC:
             user_id=user_id,
             quiz_id=quiz_id,
             question_order=question_ids, # type: ignore
-            question_options_order=options_order
+            question_options_order=options_order  # type: ignore
         )
 
         session_id = await self.quiz_session_repo.add_session(session)

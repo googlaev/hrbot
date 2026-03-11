@@ -46,3 +46,6 @@ class QuizSessionRepoPort(Protocol):
 
     async def get_mistakes(self, session: QuizSession) -> list[dict[str, Any]]:
         ...
+
+    async def get_quiz_rating(self, quiz_id: int) -> list[dict]:
+        ...

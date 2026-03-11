@@ -15,6 +15,7 @@ class QuizRepo(QuizRepoPort):
             Quiz(
                 id=row["id"], 
                 title=row["title"], 
+                questions_len=row["questions_len"],
                 daily_attempt_limit=row["daily_attempt_limit"],
                 question_count=row["question_count"]
             ) for row in rows
@@ -36,6 +37,7 @@ class QuizRepo(QuizRepoPort):
         return Quiz(
             id=row["id"], 
             title=row["title"],
+            questions_len=row["questions_len"],
             daily_attempt_limit=row["daily_attempt_limit"],
             question_count=row["question_count"]
         )
@@ -57,7 +59,7 @@ class QuizRepo(QuizRepoPort):
     async def get_questions(self, quiz_id: int) -> list[Question]:
         rows = await self.db.fetchall(
             """
-            SELECT id, quiz_id, number, question_text, right_answer, wrong_answers_json
+            SELECT id, quiz_id, number, time_to_answer, question_text, right_answer, wrong_answers_json
             FROM questions WHERE quiz_id=? ORDER BY id
             """,
             (quiz_id,)
@@ -68,6 +70,7 @@ class QuizRepo(QuizRepoPort):
                 id=r["id"],
                 quiz_id=r["quiz_id"],
                 number=r["number"],
+                time_to_answer=r["time_to_answer"],
                 question_text=r["question_text"],
                 right_answer=r["right_answer"],
                 wrong_answers=json.loads(r["wrong_answers_json"])
@@ -79,10 +82,10 @@ class QuizRepo(QuizRepoPort):
         quiz_id = await self.db.execute(
             """
             INSERT INTO quizzes 
-            (title, daily_attempt_limit, question_count) 
-            VALUES (?, ?, ?)
+            (title, daily_attempt_limit, questions_len, question_count) 
+            VALUES (?, ?, ?, ?)
             """,
-            (quiz.title, quiz.daily_attempt_limit, quiz.question_count),
+            (quiz.title, quiz.daily_attempt_limit, quiz.questions_len, quiz.question_count),
             commit=True
         )
 
@@ -90,12 +93,13 @@ class QuizRepo(QuizRepoPort):
             await self.db.execute(
                 """
                 INSERT INTO questions
-                (quiz_id, number, question_text, right_answer, wrong_answers_json)
-                VALUES (?, ?, ?, ?, ?)
+                (quiz_id, number, time_to_answer, question_text, right_answer, wrong_answers_json)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     quiz_id.lastrowid,
                     q.number,
+                    q.time_to_answer,
                     q.question_text,
                     q.right_answer,
                     json.dumps(q.wrong_answers)
