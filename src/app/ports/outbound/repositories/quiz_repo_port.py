@@ -23,4 +23,7 @@ class QuizRepoPort(Protocol):
 
     async def delete_quiz(self, quiz_id: int) -> None:
         ...
+
+    async def set_quiz_hidden(self, quiz_id: int, hidden: bool) -> None:
+        ...
         

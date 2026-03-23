@@ -42,8 +42,9 @@ async def cmd_quiz(message: types.Message, actions: AppActions):
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"{q.id} - {q.title}", callback_data=f"quiz|{q.id}")]
+            [InlineKeyboardButton(text=f"{q.title}", callback_data=f"quiz|{q.id}")]
             for q in quizzes
+            if not q.is_hidden
         ]
     )
     await message.answer("Выберите тест:", reply_markup=keyboard)
@@ -55,10 +56,11 @@ async def rating_tests(tg_object: types.Message | types.CallbackQuery, actions: 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
-                text=f"{q.id} - {q.title}",
+                text=f"{q.title}",
                 callback_data=f"rating_quiz|{q.id}"
             )]
             for q in quizzes
+            if not q.is_hidden
         ]
     )
 

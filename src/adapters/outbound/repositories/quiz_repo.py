@@ -17,7 +17,8 @@ class QuizRepo(QuizRepoPort):
                 title=row["title"], 
                 questions_len=row["questions_len"],
                 daily_attempt_limit=row["daily_attempt_limit"],
-                question_count=row["question_count"]
+                question_count=row["question_count"],
+                is_hidden=bool(row["is_hidden"])
             ) for row in rows
         ]
     
@@ -39,7 +40,8 @@ class QuizRepo(QuizRepoPort):
             title=row["title"],
             questions_len=row["questions_len"],
             daily_attempt_limit=row["daily_attempt_limit"],
-            question_count=row["question_count"]
+            question_count=row["question_count"],
+            is_hidden=bool(row["is_hidden"])
         )
     
     async def set_question_count(self, quiz_id: int, new_count: int):
@@ -82,10 +84,10 @@ class QuizRepo(QuizRepoPort):
         quiz_id = await self.db.execute(
             """
             INSERT INTO quizzes 
-            (title, daily_attempt_limit, questions_len, question_count) 
-            VALUES (?, ?, ?, ?)
+            (title, daily_attempt_limit, questions_len, question_count, is_hidden) 
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (quiz.title, quiz.daily_attempt_limit, quiz.questions_len, quiz.question_count),
+            (quiz.title, quiz.daily_attempt_limit, quiz.questions_len, quiz.question_count, int(quiz.is_hidden)),
             commit=True
         )
 
@@ -115,3 +117,14 @@ class QuizRepo(QuizRepoPort):
             (quiz_id,),
             commit=True
         )
+
+    async def set_quiz_hidden(self, quiz_id: int, hidden: bool) -> None:
+        await self.db.execute(
+            """
+            UPDATE quizzes
+            SET is_hidden = ?
+            WHERE id = ?
+            """,
+            (int(hidden), quiz_id)
+        )
+        await self.db.commit()

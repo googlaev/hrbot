@@ -39,7 +39,8 @@ async def setup_database(db: SqliteDatabase) -> None:
             title TEXT NOT NULL,
             questions_len INTEGER NOT NULL,
             daily_attempt_limit INTEGER NOT NULL,
-            question_count INTEGER NOT NULL
+            question_count INTEGER NOT NULL,
+            is_hidden INTEGER DEFAULT 0
         );
         """
     )

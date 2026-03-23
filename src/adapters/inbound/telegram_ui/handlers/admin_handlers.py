@@ -25,7 +25,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=[
-            [types.KeyboardButton(text="Посмотреть тесты"), types.KeyboardButton(text="Добавить тест")]
+            [types.KeyboardButton(text="Посмотреть тесты")]
         ],
         resize_keyboard=True,
         one_time_keyboard=True
@@ -53,7 +53,10 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=f"(id: {q.id}) {q.title}", callback_data=f"quiz_menu|{q.id}")] for q in quizzes
+            [
+                InlineKeyboardButton(text=f"{q.title}", callback_data=f"quiz_menu|{q.id}"),
+                InlineKeyboardButton(text=f"Рейтинг", callback_data=f"rating_quiz|{q.id}"),
+            ] for q in quizzes
         ]
     )
 
@@ -67,7 +70,11 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
     else:
         await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
 
-@admin_router.message(F.text == "Добавить тест")
+@admin_router.callback_query(F.data == "rating_back")
+async def rating_back(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    await list_quizzes(callback, state, actions)
+
+@admin_router.message(Command("add"))
 async def show_add_quiz_menu(message: types.Message, state: FSMContext):
     await state.set_state(AddQuiz.waiting_for_file)
     keyboard = types.InlineKeyboardMarkup(
@@ -99,7 +106,8 @@ async def quiz_menu(callback: types.CallbackQuery, state: FSMContext, actions: A
         quiz_id = data.get("selected_quiz_id")
     
     menu_stack = data.get("menu_stack", [])
-    menu_stack.append("quiz_menu")
+    if not menu_stack or menu_stack[-1] != "quiz_menu":
+        menu_stack.append("quiz_menu")
     await state.update_data(menu_stack=menu_stack)
 
     await state.update_data(selected_quiz_id=quiz_id)
@@ -110,6 +118,7 @@ async def quiz_menu(callback: types.CallbackQuery, state: FSMContext, actions: A
         inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех попыток", callback_data="view_attempts")],
             [InlineKeyboardButton(text="Пройти тест", callback_data=f"quiz|{quiz_id}")],
+            [InlineKeyboardButton(text="Скрыть" if not quiz.is_hidden else "Открыть", callback_data=f"toggle_quiz|{quiz_id}")],
             [InlineKeyboardButton(text=f"Кол-во вопросов: {quiz.question_count}", callback_data=f"edit_qcount|{quiz_id}")],
             [InlineKeyboardButton(text=f"Кол-во попыток в день: {quiz.daily_attempt_limit}", callback_data=f"edit_attempts|{quiz_id}")],
             [InlineKeyboardButton(text="Удалить тест", callback_data="delete_quiz")],
@@ -124,6 +133,14 @@ async def quiz_menu(callback: types.CallbackQuery, state: FSMContext, actions: A
     )
 
 # ========================= Quiz settings ==============================
+@admin_router.callback_query(F.data.startswith("toggle_quiz|"))
+async def toggle_quiz_visibility(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
+    quiz_id = int(callback.data.split("|")[1])
+
+    await actions.quiz_settings.toggle_quiz_visibility(quiz_id)
+
+    await quiz_menu(callback, state, actions)
+
 @admin_router.callback_query(F.data.startswith("edit_qcount|"))
 async def edit_question_count(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
     quiz_id = int(callback.data.split("|")[1])

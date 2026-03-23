@@ -26,3 +26,4 @@ class Quiz:
     questions_len: int
     daily_attempt_limit: int = 1
     question_count: int = 5
+    is_hidden: bool = False
