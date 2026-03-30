@@ -56,7 +56,6 @@ async def quiz_select(callback: types.CallbackQuery, user_id: int, state: FSMCon
 
 @quiz_router.callback_query(F.data.startswith("rating_quiz|"))
 async def show_rating(callback: types.CallbackQuery, actions: AppActions):
-
     quiz_id = int(callback.data.split("|")[1])
 
     rating = await actions.quiz_rating.execute(quiz_id)

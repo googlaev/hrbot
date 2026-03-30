@@ -25,7 +25,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=[
-            [types.KeyboardButton(text="Посмотреть тесты")]
+            [types.KeyboardButton(text="Посмотреть тесты"), types.KeyboardButton(text="Рейтинг тестов")]
         ],
         resize_keyboard=True,
         one_time_keyboard=True
@@ -54,8 +54,11 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text=f"{q.title}", callback_data=f"quiz_menu|{q.id}"),
-                InlineKeyboardButton(text=f"Рейтинг", callback_data=f"rating_quiz|{q.id}"),
+                InlineKeyboardButton(
+                    text=f"{q.title}", 
+                    callback_data=f"quiz_menu|{q.id}",
+                    style="danger" if q.is_hidden else "success"
+                )
             ] for q in quizzes
         ]
     )
@@ -70,9 +73,31 @@ async def list_quizzes(tg_object: types.Message | types.CallbackQuery, state: FS
     else:
         await tg_object.message.edit_text("Список тестов:", reply_markup=keyboard)
 
+@admin_router.message(F.text == "Рейтинг тестов")
+async def rating_tests(tg_object: types.Message | types.CallbackQuery, actions: AppActions):
+    quizzes = await actions.quiz_list.execute()
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text=f"{q.title}",
+                callback_data=f"rating_quiz|{q.id}"
+            )]
+            for q in quizzes
+        ]
+    )
+
+    if isinstance(tg_object, types.Message):
+        if not quizzes:
+            await tg_object.answer("Пока нет тестов.")
+            return
+        await tg_object.answer("Выберите тест для просмотра рейтинга:", reply_markup=keyboard)
+    else:
+        await tg_object.message.edit_text("Выберите тест для просмотра рейтинга:", reply_markup=keyboard)
+
 @admin_router.callback_query(F.data == "rating_back")
 async def rating_back(callback: types.CallbackQuery, state: FSMContext, actions: AppActions):
-    await list_quizzes(callback, state, actions)
+    await rating_tests(callback, actions)
 
 @admin_router.message(Command("add"))
 async def show_add_quiz_menu(message: types.Message, state: FSMContext):
